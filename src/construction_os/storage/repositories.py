@@ -8,8 +8,8 @@ class ImmutableRecordError(RuntimeError): pass
 
 class WorkItemRepository:
     def __init__(self,session): self.session=session
-    def add(self,company_id:UUID,**values):
-        if values["company_id"]!=company_id: raise PermissionError("company mismatch")
+    def add(self,tenant_id:UUID,**values):
+        if values["company_id"]!=tenant_id: raise PermissionError("company mismatch")
         row=WorkItemRow(**values); self.session.add(row); self.session.flush(); return row
     def list_current(self,company_id:UUID,object_id:UUID):
         q=select(WorkItemRow).where(WorkItemRow.company_id==company_id,WorkItemRow.object_id==object_id,WorkItemRow.valid_to.is_(None)).order_by(WorkItemRow.position_no)

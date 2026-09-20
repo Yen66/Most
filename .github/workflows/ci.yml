@@ -13,6 +13,13 @@ jobs:
       - run: pip install -e '.[dev]'
       - run: ruff check .
       - run: pytest -q -m 'not postgres'
+      - run: python -m construction_os.cli report --date 2026-09-20 --gross 35656922.00 115397900.00 47635990.22
+      - name: Repository hygiene
+        run: |
+          set -o pipefail
+          FOUND="$(git log --all --pretty=format: --name-only --diff-filter=A | sort -u | grep -Ei '\.(xlsx|xls|pdf|docx|env)$|data_raw/' || true)"
+          printf '%s\n' "$FOUND"
+          test -z "$FOUND"
   postgres:
     runs-on: ubuntu-latest
     services:
