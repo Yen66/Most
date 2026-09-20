@@ -1,0 +1,7 @@
+SQLAlchemy==2.0.50
+alembic==1.18.4
+psycopg[binary]==3.2.10
+openpyxl==3.1.5
+pytest==9.0.2
+ruff==0.13.2
+setuptools==80.9.0
