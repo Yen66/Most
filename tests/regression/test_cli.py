@@ -26,8 +26,32 @@ def test_cli_import_verify_report(monkeypatch, tmp_path, fixtures_dir, capsys):
     Base.metadata.create_all(make_engine(url))
     monkeypatch.setenv("DATABASE_URL", url)
     for suffix in ("a", "b", "c"):
-        assert main(["import", str(fixtures_dir / f"vor_object_{suffix}.xlsx"), "--kind", "vor", "--company", "A"]) == 0
-    assert main(["import", str(fixtures_dir / "schedule_object_a.xlsx"), "--kind", "schedule", "--company", "A"]) == 0
+        assert (
+            main(
+                [
+                    "import",
+                    str(fixtures_dir / f"vor_object_{suffix}.xlsx"),
+                    "--kind",
+                    "vor",
+                    "--company",
+                    "A",
+                ]
+            )
+            == 0
+        )
+    assert (
+        main(
+            [
+                "import",
+                str(fixtures_dir / "schedule_object_a.xlsx"),
+                "--kind",
+                "schedule",
+                "--company",
+                "A",
+            ]
+        )
+        == 0
+    )
     assert main(["verify", "--object", "vor_object_a", "--company", "A"]) == 0
     assert main(["report", "--date", "2026-09-20", "--company", "A"]) == 0
     output = capsys.readouterr().out

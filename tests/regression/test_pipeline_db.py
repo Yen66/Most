@@ -2,10 +2,8 @@ from datetime import date
 from decimal import Decimal
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from construction_os.importers import parse_schedule, parse_vor, persist_schedule, persist_vor
-from construction_os.storage import Base, make_engine
 from construction_os.storage.models import CompanyRow, DocumentRow, WorkItemRow
 from construction_os.storage.queries import object_revenues, portfolio_revenue, verify_object
 
@@ -22,7 +20,9 @@ def _load_pipeline(session, fixtures_dir, company="Подрядчик"):
 def test_pipeline_db_seven_reference_values(db_session, fixtures_dir):
     _load_pipeline(db_session, fixtures_dir)
     company = db_session.scalar(select(CompanyRow).where(CompanyRow.name == "Подрядчик"))
-    items_a = list(db_session.scalars(select(WorkItemRow).where(WorkItemRow.company_id == company.id)))
+    items_a = list(
+        db_session.scalars(select(WorkItemRow).where(WorkItemRow.company_id == company.id))
+    )
     assert len(items_a) == 108
     assert verify_object(db_session, "Подрядчик", "vor_object_a") == []
     rows = object_revenues(db_session, date(2026, 9, 20), "Подрядчик")

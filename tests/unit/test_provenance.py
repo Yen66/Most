@@ -14,7 +14,9 @@ def test_source_defaults_exact():
 
 
 def test_source_cell_location():
-    source = ValueSource(uuid4(), SourceType.DOCUMENT, sheet="Лист1", cell_or_range="D11", row_no=11)
+    source = ValueSource(
+        uuid4(), SourceType.DOCUMENT, sheet="Лист1", cell_or_range="D11", row_no=11
+    )
     assert (source.sheet, source.cell_or_range, source.row_no) == ("Лист1", "D11", 11)
 
 

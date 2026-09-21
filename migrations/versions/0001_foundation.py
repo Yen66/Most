@@ -68,7 +68,9 @@ def upgrade() -> None:
         sa.Column("source_id", sa.Uuid(), sa.ForeignKey("value_sources.id"), nullable=False),
     )
     op.create_index("ix_value_refs_company_id", "value_refs", ["company_id"])
-    op.create_index("ix_value_refs_entity", "value_refs", ["entity_name", "entity_id", "field_name"])
+    op.create_index(
+        "ix_value_refs_entity", "value_refs", ["entity_name", "entity_id", "field_name"]
+    )
     op.create_table(
         "contracts",
         sa.Column("id", sa.Uuid(), primary_key=True),

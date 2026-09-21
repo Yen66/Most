@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from datetime import date, datetime
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from io import BytesIO
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
@@ -75,13 +75,29 @@ def build_vor(path: Path, rows: list[list], object_name: str, header_shift: int 
         sheet.merge_cells("A41:F41")
     sheet["E1"] = "Приложение № 3\nк Государственному контракту №___"
     sheet["A4"] = "Ведомость объемов и стоимости работ (смета)"
-    first_header = ["№ п/п", "Наименование видов и этапов работ", "Ед. изм", "Кол-во", "Ед. расценка, руб. ", "Стоимость, руб. "]
-    second_header = ["№ п/п", "Наименование конструктивных решений (элементов), видов работ", "Ед. Изм.", "Количество (объём работ)", "Единичная расценка с НДС, руб.", "Всего с НДС, руб."]
+    first_header = [
+        "№ п/п",
+        "Наименование видов и этапов работ",
+        "Ед. изм",
+        "Кол-во",
+        "Ед. расценка, руб. ",
+        "Стоимость, руб. ",
+    ]
+    second_header = [
+        "№ п/п",
+        "Наименование конструктивных решений (элементов), видов работ",
+        "Ед. Изм.",
+        "Количество (объём работ)",
+        "Единичная расценка с НДС, руб.",
+        "Всего с НДС, руб.",
+    ]
     for column, value in enumerate(first_header, 1):
         sheet.cell(6, column, value)
     for column, value in enumerate(["1", "2", "3", "4", "5", "6"], 1):
         sheet.cell(7, column, value)
-    sheet["A8"] = "Содержание искусственных сооружений на действующей сети автомобильных дорог общего пользования"
+    sheet["A8"] = (
+        "Содержание искусственных сооружений на действующей сети автомобильных дорог общего пользования"
+    )
     for column, value in enumerate(second_header, 1):
         sheet.cell(9, column, value)
     for column, value in enumerate(["1", "2", "3", "4", "5*", "6*"], 1):
@@ -100,7 +116,11 @@ def build_vor(path: Path, rows: list[list], object_name: str, header_shift: int 
     sheet.cell(total_row, 1, "Итого с учётом НДС 22%")
     sheet.cell(total_row, 6, f"=SUM(F11:F{total_row - 1})")
     note_row = total_row + 2
-    sheet.cell(note_row, 1, "* Столбцы 5 и 6 будут скорректированы  по итогам открытого конкурса в электронной форме, пропорционально сниженной цены.")
+    sheet.cell(
+        note_row,
+        1,
+        "* Столбцы 5 и 6 будут скорректированы  по итогам открытого конкурса в электронной форме, пропорционально сниженной цены.",
+    )
     sheet.cell(note_row + 2, 2, "Заказчик:")
     sheet.cell(note_row + 2, 4, "Подрядчик:")
     if header_shift:
@@ -109,9 +129,13 @@ def build_vor(path: Path, rows: list[list], object_name: str, header_shift: int 
         sheet.move_range(f"A9:F{note_row + 2}", rows=header_shift, cols=0, translate=True)
         shifted_total = total_row + header_shift
         shifted_note = note_row + header_shift
-        sheet.merge_cells(start_row=shifted_total, start_column=1, end_row=shifted_total, end_column=5)
+        sheet.merge_cells(
+            start_row=shifted_total, start_column=1, end_row=shifted_total, end_column=5
+        )
         if len(rows) == 29:
-            sheet.merge_cells(start_row=shifted_total + 1, start_column=1, end_row=shifted_total + 1, end_column=6)
+            sheet.merge_cells(
+                start_row=shifted_total + 1, start_column=1, end_row=shifted_total + 1, end_column=6
+            )
         sheet.merge_cells("E1:F1")
         sheet.merge_cells("A4:F4")
         sheet.merge_cells("A8:F8")
@@ -135,7 +159,15 @@ def synthetic_rows(count: int, target: Decimal, prefix: str) -> list[list]:
         quantity = Decimal((position % 9) + 1)
         price = money(Decimal("15000") + Decimal(position * 731))
         subtotal += position_amount(quantity, price)
-        rows.append([position, f"{names[(position - 1) % len(names)]} — {prefix} {position}", "ед.", quantity, price])
+        rows.append(
+            [
+                position,
+                f"{names[(position - 1) % len(names)]} — {prefix} {position}",
+                "ед.",
+                quantity,
+                price,
+            ]
+        )
     last_price = money(target - subtotal)
     rows.append([count, f"Завершающий комплекс работ — {prefix}", "ед.", Decimal("1"), last_price])
     actual = sum((position_amount(row[3], row[4]) for row in rows), Decimal("0"))
@@ -157,10 +189,39 @@ def build_schedule(path: Path) -> None:
         sheet.merge_cells(cell_range)
     sheet["A1"] = "КАЛЕНДАРНЫЙ ГРАФИК ПРОИЗВОДСТВА РАБОТ — СЕВЕРНАЯ"
     sheet["A2"] = "Мост через реку Северная, км 10+100 А-900. Период работ: 05.10.2026–15.11.2026."
-    sheet["A4"] = "Ресурсный план: 05–09.10 до 10 чел.; далее Северная и Восточная делят мобильную бригаду 10 чел. По Северной в разные периоды 4–6 чел., на критических операциях ресурс перераспределяется."
-    sheet["A5"] = "Реверс: сторона 1 06–24.10 → отдельный день переключения 25.10 → сторона 2 26.10–12.11 → завершение 13–15.11. Это не 10 дней: объект идет 42 календарных дня."
-    headers = ["№ сметы", "Наименование работ", "Фронт/сторона", "Ед.", "Объем", "Начало", "Окончание", "Дни", "Звено, чел.", "Стоимость, руб.", "Комментарий"]
-    periods = ["01–04.10", "05–09.10", "10–15.10", "16–20.10", "21–25.10", "26–31.10", "01–05.11", "06–10.11", "11–15.11", "16–20.11", "21–23.11", "24–30.11"]
+    sheet["A4"] = (
+        "Ресурсный план: 05–09.10 до 10 чел.; далее Северная и Восточная делят мобильную бригаду 10 чел. По Северной в разные периоды 4–6 чел., на критических операциях ресурс перераспределяется."
+    )
+    sheet["A5"] = (
+        "Реверс: сторона 1 06–24.10 → отдельный день переключения 25.10 → сторона 2 26.10–12.11 → завершение 13–15.11. Это не 10 дней: объект идет 42 календарных дня."
+    )
+    headers = [
+        "№ сметы",
+        "Наименование работ",
+        "Фронт/сторона",
+        "Ед.",
+        "Объем",
+        "Начало",
+        "Окончание",
+        "Дни",
+        "Звено, чел.",
+        "Стоимость, руб.",
+        "Комментарий",
+    ]
+    periods = [
+        "01–04.10",
+        "05–09.10",
+        "10–15.10",
+        "16–20.10",
+        "21–25.10",
+        "26–31.10",
+        "01–05.11",
+        "06–10.11",
+        "11–15.11",
+        "16–20.11",
+        "21–23.11",
+        "24–30.11",
+    ]
     for column, value in enumerate(headers + periods, 1):
         sheet.cell(7, column, value)
 
@@ -188,7 +249,9 @@ def build_schedule(path: Path) -> None:
     task_seen: dict[int, int] = {}
     for row_number, (kind, position, front) in enumerate(entries, 8):
         if kind == "group":
-            sheet.merge_cells(start_row=row_number, start_column=1, end_row=row_number, end_column=23)
+            sheet.merge_cells(
+                start_row=row_number, start_column=1, end_row=row_number, end_column=23
+            )
             sheet.cell(row_number, 1, front)
             continue
         assert position is not None
@@ -215,14 +278,28 @@ def build_schedule(path: Path) -> None:
             start_on, end_on, period_index = date(2026, 10, 26), date(2026, 11, 12), 6
         else:
             start_on, end_on, period_index = date(2026, 11, 13), date(2026, 11, 15), 8
-        values = [position, name, front, unit, task_quantity, start_on, end_on, (end_on - start_on).days + 1, 4 + (position % 7), task_amount, ""]
+        values = [
+            position,
+            name,
+            front,
+            unit,
+            task_quantity,
+            start_on,
+            end_on,
+            (end_on - start_on).days + 1,
+            4 + (position % 7),
+            task_amount,
+            "",
+        ]
         for column, value in enumerate(values, 1):
             sheet.cell(row_number, column, value)
         sheet.cell(row_number, 12 + period_index, task_quantity)
 
     sheet["A58"] = "ИТОГО ПО ВЕДОМОСТИ"
     sheet["J58"] = "=SUM(J8:J57)"
-    sheet["A60"] = "Примечание: объемы по периодам — плановое календарное распределение, а не подтверждённая норма выработки."
+    sheet["A60"] = (
+        "Примечание: объемы по периодам — плановое календарное распределение, а не подтверждённая норма выработки."
+    )
     save_deterministic(workbook, path)
 
 
@@ -270,7 +347,11 @@ def verify_schedule(path: Path) -> None:
         if quantity is None:
             continue
         period_total = sum(
-            (Decimal(str(sheet.cell(row, column).value)) for column in range(12, 24) if sheet.cell(row, column).value is not None),
+            (
+                Decimal(str(sheet.cell(row, column).value))
+                for column in range(12, 24)
+                if sheet.cell(row, column).value is not None
+            ),
             Decimal("0"),
         )
         if period_total != Decimal(str(quantity)):

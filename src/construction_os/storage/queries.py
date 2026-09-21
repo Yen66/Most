@@ -85,8 +85,12 @@ def verify_object(session, company_name: str, object_name: str) -> list[tuple[in
     for task in tasks:
         if task.position_no is None:
             continue
-        quantities[task.position_no] = quantities.get(task.position_no, Decimal("0")) + (task.quantity or Decimal("0"))
-        amounts[task.position_no] = amounts.get(task.position_no, Decimal("0")) + (task.amount or Decimal("0"))
+        quantities[task.position_no] = quantities.get(task.position_no, Decimal("0")) + (
+            task.quantity or Decimal("0")
+        )
+        amounts[task.position_no] = amounts.get(task.position_no, Decimal("0")) + (
+            task.amount or Decimal("0")
+        )
     differences: list[tuple[int, str]] = []
     for item in work_items:
         if quantities.get(item.position_no, Decimal("0")) != item.quantity:

@@ -1,7 +1,4 @@
 from decimal import Decimal
-from pathlib import Path
-
-from openpyxl import load_workbook
 
 from construction_os.importers import parse_vor
 from construction_os.money import round_position
@@ -37,7 +34,10 @@ def test_vor_a_price_not_final(fixtures_dir):
 def test_vor_all_position_amount_invariant(fixtures_dir):
     for suffix in ("a", "b", "c"):
         parsed = parse_vor(fixtures_dir / f"vor_object_{suffix}.xlsx")
-        assert all(item.amount_gross == round_position(item.quantity, item.price_gross) for item in parsed.items)
+        assert all(
+            item.amount_gross == round_position(item.quantity, item.price_gross)
+            for item in parsed.items
+        )
 
 
 def test_vor_reparse_same_digest(fixtures_dir):

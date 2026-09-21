@@ -1,10 +1,24 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint, Uuid, column
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    Uuid,
+    column,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -12,7 +26,7 @@ JSON_TYPE = JSON().with_variant(JSONB, "postgresql")
 
 
 def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Base(DeclarativeBase):
@@ -30,19 +44,25 @@ class DocumentRow(Base):
     __tablename__ = "documents"
     __table_args__ = (UniqueConstraint("company_id", "sha256"),)
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     kind: Mapped[str] = mapped_column(Text, nullable=False)
     original_filename: Mapped[str] = mapped_column(Text, nullable=False)
     stored_path: Mapped[str] = mapped_column(Text, nullable=False)
     sha256: Mapped[str] = mapped_column(String(64), nullable=False)
-    uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    uploaded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )
     meta: Mapped[dict] = mapped_column(JSON_TYPE, default=dict, nullable=False)
 
 
 class ValueSourceRow(Base):
     __tablename__ = "value_sources"
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     source_type: Mapped[str] = mapped_column(Text, nullable=False)
     document_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("documents.id"))
     sheet: Mapped[str | None] = mapped_column(Text)
@@ -56,7 +76,9 @@ class ValueRefRow(Base):
     __tablename__ = "value_refs"
     __table_args__ = (Index("ix_value_refs_entity", "entity_name", "entity_id", "field_name"),)
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     entity_name: Mapped[str] = mapped_column(Text, nullable=False)
     entity_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
     field_name: Mapped[str] = mapped_column(Text, nullable=False)
@@ -78,7 +100,9 @@ class ReferenceRateRow(Base):
 class ContractRow(Base):
     __tablename__ = "contracts"
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     contract_type: Mapped[str] = mapped_column(Text, nullable=False)
     number: Mapped[str | None] = mapped_column(Text)
     price_is_final: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -95,7 +119,9 @@ class ObjectRow(Base):
     __tablename__ = "objects"
     __table_args__ = (UniqueConstraint("company_id", "name"),)
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     contract_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("contracts.id"))
     name: Mapped[str] = mapped_column(Text, nullable=False)
     object_type: Mapped[str | None] = mapped_column(Text)
@@ -116,7 +142,9 @@ class WorkItemRow(Base):
         ),
     )
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     object_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("objects.id"), nullable=False)
     contract_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("contracts.id"))
     position_no: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -137,7 +165,9 @@ class WorkItemRow(Base):
 class ScheduleTaskRow(Base):
     __tablename__ = "schedule_tasks"
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     object_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("objects.id"), nullable=False)
     position_no: Mapped[int | None] = mapped_column(Integer)
     name: Mapped[str] = mapped_column(Text, nullable=False)
@@ -156,7 +186,9 @@ class ScheduleTaskRow(Base):
 class ScheduleNoteRow(Base):
     __tablename__ = "schedule_notes"
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     object_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("objects.id"), nullable=False)
     note_type: Mapped[str] = mapped_column(Text, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
@@ -168,7 +200,9 @@ class ScheduleNoteRow(Base):
 class ValueConfirmationRow(Base):
     __tablename__ = "value_confirmations"
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     entity_name: Mapped[str] = mapped_column(Text, nullable=False)
     entity_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
     field_name: Mapped[str | None] = mapped_column(Text)
@@ -177,4 +211,6 @@ class ValueConfirmationRow(Base):
     new_value: Mapped[str | None] = mapped_column(Text)
     reason: Mapped[str | None] = mapped_column(Text)
     actor: Mapped[str] = mapped_column(Text, nullable=False)
-    acted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    acted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )

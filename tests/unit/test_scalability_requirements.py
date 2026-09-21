@@ -7,7 +7,6 @@ import sys
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
-from uuid import uuid4
 
 import pytest
 from openpyxl import load_workbook
@@ -15,7 +14,11 @@ from openpyxl import load_workbook
 from construction_os.importers import parse_vor
 from construction_os.references import ContractType, NoteType, SourceType, Unit, get_rate
 from construction_os.storage.models import Base, CompanyRow, ObjectRow, ValueSourceRow
-from construction_os.storage.repositories import TENANT_REPOSITORIES, ImmutableRecordError, WorkItemRepository
+from construction_os.storage.repositories import (
+    TENANT_REPOSITORIES,
+    ImmutableRecordError,
+    WorkItemRepository,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 EXCLUDED_TABLES = {"companies", "reference_rates"}
@@ -39,7 +42,9 @@ def test_M01_company_id_everywhere():
             continue
         column = table.c.company_id
         assert column.nullable is False
-        assert column.index is True or any(column.name in [c.name for c in index.columns] for index in table.indexes)
+        assert column.index is True or any(
+            column.name in [c.name for c in index.columns] for index in table.indexes
+        )
 
 
 def test_M02_tenant_isolation_repository_catalog_complete():
@@ -102,7 +107,9 @@ def test_M03_values_are_superseded_not_updated(sqlite_session):
         source_id=source.id,
         valid_from=date(2026, 1, 1),
     )
-    new = repo.supersede(company.id, old.id, {"price_gross": Decimal("11")}, "correction", "test", date(2026, 2, 1))
+    new = repo.supersede(
+        company.id, old.id, {"price_gross": Decimal("11")}, "correction", "test", date(2026, 2, 1)
+    )
     assert new.id != old.id
     assert repo.get_on_date(company.id, old.id, date(2026, 1, 15)).price_gross == Decimal("10")
     with pytest.raises(ImmutableRecordError):
@@ -118,7 +125,11 @@ def test_M04_no_rate_literals_outside_references():
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
-            if isinstance(node, ast.Constant) and isinstance(node.value, float) and node.value in FORBIDDEN_RATES:
+            if (
+                isinstance(node, ast.Constant)
+                and isinstance(node.value, float)
+                and node.value in FORBIDDEN_RATES
+            ):
                 violations.append((path, node.lineno, node.value))
     assert violations == []
 
@@ -134,7 +145,9 @@ def test_M06_domain_does_not_import_sqlalchemy():
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
-                violations.extend(alias.name for alias in node.names if alias.name.startswith("sqlalchemy"))
+                violations.extend(
+                    alias.name for alias in node.names if alias.name.startswith("sqlalchemy")
+                )
             if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("sqlalchemy"):
                 violations.append(node.module)
     assert violations == []
@@ -165,7 +178,14 @@ def test_M09_migrations_from_zero(tmp_path):
     env["DATABASE_URL"] = f"sqlite+pysqlite:///{database}"
     env["PYTHONPATH"] = str(ROOT / "src")
     for command in (["upgrade", "head"], ["downgrade", "base"], ["upgrade", "head"]):
-        completed = subprocess.run([sys.executable, "-m", "alembic", *command], cwd=ROOT, env=env, capture_output=True, text=True, check=False)
+        completed = subprocess.run(
+            [sys.executable, "-m", "alembic", *command],
+            cwd=ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
         assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
@@ -183,7 +203,9 @@ def test_M11_reference_types_are_extensible():
 
 
 def test_M11_calc_and_importers_do_not_branch_on_unit_values():
-    files = list((ROOT / "src" / "construction_os" / "calc").rglob("*.py")) + list((ROOT / "src" / "construction_os" / "importers").rglob("*.py"))
+    files = list((ROOT / "src" / "construction_os" / "calc").rglob("*.py")) + list(
+        (ROOT / "src" / "construction_os" / "importers").rglob("*.py")
+    )
     text = "\n".join(path.read_text(encoding="utf-8") for path in files)
     assert "Unit.PIECE" not in text
     assert "Unit.CUBIC_METER" not in text
@@ -226,4 +248,6 @@ def test_M03_postgres_trigger_rejects_direct_update(db_session):
     from sqlalchemy import text
 
     with pytest.raises(Exception, match="immutable"):
-        db_session.execute(text("UPDATE work_items SET price_gross = 11 WHERE id = :id"), {"id": item.id})
+        db_session.execute(
+            text("UPDATE work_items SET price_gross = 11 WHERE id = :id"), {"id": item.id}
+        )

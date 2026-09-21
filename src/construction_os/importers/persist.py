@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from sqlalchemy import func, select
 
@@ -117,7 +117,9 @@ def persist_vor(
         select(ObjectRow).where(ObjectRow.company_id == company.id, ObjectRow.name == object_name)
     )
     if object_row is None:
-        object_row = _new_object_with_contract(session, company.id, object_name, parsed.price_is_final)
+        object_row = _new_object_with_contract(
+            session, company.id, object_name, parsed.price_is_final
+        )
     effective_on = imported_on or date.today()
     created = 4
     for item in parsed.items:
@@ -179,7 +181,9 @@ def persist_vor(
     return PersistResult(document.id, company.id, object_row.id, created, False)
 
 
-def _object_for_schedule(session, company_id: UUID, parsed: ParsedSchedule, path: Path) -> ObjectRow:
+def _object_for_schedule(
+    session, company_id: UUID, parsed: ParsedSchedule, path: Path
+) -> ObjectRow:
     candidates = list(session.scalars(select(ObjectRow).where(ObjectRow.company_id == company_id)))
     matching: list[ObjectRow] = []
     for candidate in candidates:
@@ -236,7 +240,9 @@ def persist_schedule(
                 days=task.days,
                 crew_size=task.crew_size,
                 amount=task.amount,
-                period_volumes=[str(value) if value is not None else None for value in task.period_volumes],
+                period_volumes=[
+                    str(value) if value is not None else None for value in task.period_volumes
+                ],
                 source_id=source.id,
             )
         )

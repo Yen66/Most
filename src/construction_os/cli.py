@@ -54,7 +54,9 @@ def main(argv=None) -> int:
                 result = persist_schedule(session, arguments.company, parsed, arguments.path)
             session.commit()
             status = "duplicate skipped" if result.skipped_duplicate else "created"
-            print(f"Import: {status}; entities: {result.created_entities}; document: {result.document_id}")
+            print(
+                f"Import: {status}; entities: {result.created_entities}; document: {result.document_id}"
+            )
             return 0
         if arguments.command == "verify":
             try:

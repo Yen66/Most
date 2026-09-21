@@ -82,7 +82,15 @@ def _parse_notes(sheet) -> tuple[list[dict], str | None]:
             match = re.search(r"(\d{2}\.\d{2}\.\d{4})[–-](\d{2}\.\d{2}\.\d{4})", text)
             if match:
                 year = int(match.group(2)[-4:])
-                notes.append({"type": "period", "cell": f"A{row}", "start": match.group(1), "end": match.group(2), "text": text})
+                notes.append(
+                    {
+                        "type": "period",
+                        "cell": f"A{row}",
+                        "start": match.group(1),
+                        "end": match.group(2),
+                        "text": text,
+                    }
+                )
         elif lower.startswith("ресурсный план:"):
             note = {"type": "resource_plan", "cell": f"A{row}", "text": text}
             match = re.search(
@@ -159,8 +167,12 @@ def reconcile(vor: ParsedVor, schedule: ParsedSchedule) -> list[tuple[int, str]]
     for task in schedule.tasks:
         if task.position_no is None:
             continue
-        quantities[task.position_no] = quantities.get(task.position_no, Decimal("0")) + (task.quantity or Decimal("0"))
-        amounts[task.position_no] = amounts.get(task.position_no, Decimal("0")) + (task.amount or Decimal("0"))
+        quantities[task.position_no] = quantities.get(task.position_no, Decimal("0")) + (
+            task.quantity or Decimal("0")
+        )
+        amounts[task.position_no] = amounts.get(task.position_no, Decimal("0")) + (
+            task.amount or Decimal("0")
+        )
     differences: list[tuple[int, str]] = []
     for item in vor.items:
         if quantities.get(item.position_no, Decimal("0")) != item.quantity:

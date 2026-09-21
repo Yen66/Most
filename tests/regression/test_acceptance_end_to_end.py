@@ -1,6 +1,6 @@
-from datetime import date
 import subprocess
 import sys
+from datetime import date
 from decimal import Decimal
 
 from construction_os.calc import calculate_portfolio, calculate_revenue_for_date
@@ -32,7 +32,10 @@ def test_acceptance_end_to_end(fixtures_dir, tmp_path):
     assert first == second
     assert first.sha256 == second.sha256
     for vor in vors:
-        assert all(item.amount_gross == round_position(item.quantity, item.price_gross) for item in vor.items)
+        assert all(
+            item.amount_gross == round_position(item.quantity, item.price_gross)
+            for item in vor.items
+        )
     assert schedule.period_mismatches == ()
     assert vors[0].price_is_final is False
 
@@ -55,8 +58,12 @@ def test_acceptance_end_to_end(fixtures_dir, tmp_path):
     amount_by_position: dict[int, Decimal] = {}
     for task in schedule.tasks:
         assert task.position_no is not None
-        quantity_by_position[task.position_no] = quantity_by_position.get(task.position_no, Decimal("0")) + (task.quantity or Decimal("0"))
-        amount_by_position[task.position_no] = amount_by_position.get(task.position_no, Decimal("0")) + (task.amount or Decimal("0"))
+        quantity_by_position[task.position_no] = quantity_by_position.get(
+            task.position_no, Decimal("0")
+        ) + (task.quantity or Decimal("0"))
+        amount_by_position[task.position_no] = amount_by_position.get(
+            task.position_no, Decimal("0")
+        ) + (task.amount or Decimal("0"))
     for item in vors[0].items:
         assert quantity_by_position[item.position_no] == item.quantity
         assert amount_by_position[item.position_no] == item.amount_gross

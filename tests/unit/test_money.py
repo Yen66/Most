@@ -2,7 +2,14 @@ from decimal import Decimal
 
 import pytest
 
-from construction_os.money import add_vat, as_decimal, extract_vat, money, round_position, sum_positions
+from construction_os.money import (
+    add_vat,
+    as_decimal,
+    extract_vat,
+    money,
+    round_position,
+    sum_positions,
+)
 
 
 @pytest.mark.parametrize(

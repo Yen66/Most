@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from construction_os.references import Confidence, SourceType
@@ -16,7 +16,7 @@ class ValueSource:
     sheet: str | None = None
     cell_or_range: str | None = None
     row_no: int | None = None
-    obtained_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    obtained_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     confidence: Confidence = Confidence.EXACT
     note: str | None = None
 
@@ -43,4 +43,4 @@ class ValueConfirmation:
     old_value: str | None = None
     new_value: str | None = None
     reason: str | None = None
-    acted_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    acted_at: datetime = field(default_factory=lambda: datetime.now(UTC))

@@ -33,12 +33,12 @@ class BaseRepository:
     def __init__(self, session):
         self.session = session
 
-    def add(self, company_id: UUID, **values):
+    def add(self, tenant_id: UUID, **values):
         if self.tenant_scoped:
-            supplied = values.pop("company_id", company_id)
-            if supplied != company_id:
+            supplied = values.pop("company_id", tenant_id)
+            if supplied != tenant_id:
                 raise PermissionError("company mismatch")
-            values["company_id"] = company_id
+            values["company_id"] = tenant_id
         row = self.model(**values)
         self.session.add(row)
         self.session.flush()
@@ -127,11 +127,13 @@ class ValueConfirmationRepository(BaseRepository):
 class WorkItemRepository(BaseRepository):
     model = WorkItemRow
 
-    def list_current(self, company_id: UUID, **filters):
+    def list_current(self, company_id: UUID, object_id: UUID | None = None, **filters):
         query = select(WorkItemRow).where(
             WorkItemRow.company_id == company_id,
             WorkItemRow.valid_to.is_(None),
         )
+        if object_id is not None:
+            query = query.where(WorkItemRow.object_id == object_id)
         for field_name, value in filters.items():
             query = query.where(getattr(WorkItemRow, field_name) == value)
         return list(self.session.scalars(query.order_by(WorkItemRow.position_no)))

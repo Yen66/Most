@@ -19,12 +19,19 @@ def test_schedule_periods_sum_to_task_quantity(fixtures_dir):
 
 def test_schedule_notes_are_parsed(fixtures_dir):
     parsed = parse_schedule(fixtures_dir / "schedule_object_a.xlsx")
-    assert {note["type"] for note in parsed.notes} == {"period", "resource_plan", "reverse_scheme", "work_regime"}
+    assert {note["type"] for note in parsed.notes} == {
+        "period",
+        "resource_plan",
+        "reverse_scheme",
+        "work_regime",
+    }
 
 
 def test_schedule_resource_sharing_uses_anonymized_names(fixtures_dir):
     parsed = parse_schedule(fixtures_dir / "schedule_object_a.xlsx")
-    resource = next(note for note in parsed.notes if note["type"] == "resource_plan")["shared_resource"]
+    resource = next(note for note in parsed.notes if note["type"] == "resource_plan")[
+        "shared_resource"
+    ]
     assert resource["objects"] == ["Северная", "Восточная"]
     assert resource["crew"] == "10"
 
