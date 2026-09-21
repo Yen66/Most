@@ -1,2 +1,3 @@
-from .core import VatPair, add_vat, extract_vat, from_excel_float, round_position, sum_positions
-__all__ = ["VatPair","add_vat","extract_vat","from_excel_float","round_position","sum_positions"]
+from .core import CENT, VatPair, add_vat, as_decimal, extract_vat, from_excel_float, money, round_position, sum_positions
+
+__all__ = ["CENT", "VatPair", "add_vat", "as_decimal", "extract_vat", "from_excel_float", "money", "round_position", "sum_positions"]
