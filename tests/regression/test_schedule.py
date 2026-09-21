@@ -13,7 +13,9 @@ def test_schedule_reconciles_all_positions(fixtures_dir):
     vor = parse_vor(fixtures_dir / "vor_object_a.xlsx")
     schedule = parse_schedule(fixtures_dir / "schedule_object_a.xlsx")
     assert reconcile(vor, schedule) == []
-    assert {task.position_no for task in schedule.tasks if task.position_no is not None} == set(range(1, 30))
+    assert {task.position_no for task in schedule.tasks if task.position_no is not None} == set(
+        range(1, 30)
+    )
 
 
 def test_schedule_periods_sum_to_task_quantity(fixtures_dir):

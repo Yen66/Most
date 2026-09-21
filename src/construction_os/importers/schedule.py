@@ -154,10 +154,7 @@ def parse_schedule(path: str | Path) -> ParsedSchedule:
     semantic_payload = {
         "sheet": sheet.title,
         "object_name": object_name,
-        "notes": [
-            {key: value for key, value in note.items() if key != "cell"}
-            for note in notes
-        ],
+        "notes": [{key: value for key, value in note.items() if key != "cell"} for note in notes],
         "tasks": [
             {
                 "position_no": task.position_no,
@@ -170,7 +167,9 @@ def parse_schedule(path: str | Path) -> ParsedSchedule:
                 "days": task.days,
                 "crew_size": str(task.crew_size) if task.crew_size is not None else None,
                 "amount": str(task.amount) if task.amount is not None else None,
-                "period_volumes": [str(value) if value is not None else None for value in task.period_volumes],
+                "period_volumes": [
+                    str(value) if value is not None else None for value in task.period_volumes
+                ],
             }
             for task in tasks
         ],

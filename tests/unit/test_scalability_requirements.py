@@ -9,6 +9,7 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
+
 from construction_os.importers import parse_vor
 from construction_os.references import ContractType, NoteType, SourceType, Unit, get_rate
 from construction_os.storage.models import Base, CompanyRow, ObjectRow, ValueSourceRow
