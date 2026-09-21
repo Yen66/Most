@@ -11,4 +11,4 @@ __pycache__/
 *.db
 *.sqlite3
 backups/
-!tests/fixtures/*.xlsx
+tests/fixtures/generated/

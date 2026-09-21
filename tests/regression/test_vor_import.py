@@ -1,17 +1,48 @@
 from decimal import Decimal
-from openpyxl import Workbook
+from pathlib import Path
+
+from openpyxl import load_workbook
+
 from construction_os.importers import parse_vor
+from construction_os.money import round_position
 
-def make_real_shape(path):
-    wb=Workbook();ws=wb.active;ws.title="Лист1"
-    for c,v in enumerate(["№ п/п","Наименование работ","Ед.","Количество","Единичная расценка с НДС","Всего с НДС"],1):ws.cell(9,c,v)
-    ws.cell(11,1,1);ws.cell(11,2,"Установка щитов");ws.cell(11,3,"шт");ws.cell(11,4,2);ws.cell(11,5,42860.189999999995);ws.cell(11,6,"=ROUND(D11*E11,2)")
-    ws.cell(12,1,"Итого с учётом НДС 22%");ws.cell(12,6,"=SUM(F11:F11)")
-    wb.save(path)
 
-def test_structure_header_and_float(tmp_path):
-    p=tmp_path/"v.xlsx";make_real_shape(p);v=parse_vor(p)
-    assert v.header_row==9 and len(v.items)==1
-    assert v.items[0].price_gross==Decimal("42860.19")
-    assert v.items[0].amount_gross==Decimal("85720.38")
-    assert v.vat_rate==Decimal("0.22")
+def test_vor_a_count(fixtures_dir):
+    assert len(parse_vor(fixtures_dir / "vor_object_a.xlsx").items) == 29
+
+
+def test_vor_a_total(fixtures_dir):
+    assert parse_vor(fixtures_dir / "vor_object_a.xlsx").total_gross == Decimal("35656922.00")
+
+
+def test_vor_a_header_found_by_content(fixtures_dir):
+    assert parse_vor(fixtures_dir / "vor_object_a.xlsx").header_row == 9
+
+
+def test_vor_a_formula_cache_absence_is_supported(fixtures_dir):
+    parsed = parse_vor(fixtures_dir / "vor_object_a.xlsx")
+    assert parsed.items[0].amount_formula == "=ROUND(D11*E11,2)"
+    assert parsed.items[0].amount_gross == Decimal("85720.38")
+
+
+def test_vor_a_formula_position_recovered(fixtures_dir):
+    parsed = parse_vor(fixtures_dir / "vor_object_a.xlsx")
+    assert [item.position_no for item in parsed.items] == list(range(1, 30))
+
+
+def test_vor_a_price_not_final(fixtures_dir):
+    assert parse_vor(fixtures_dir / "vor_object_a.xlsx").price_is_final is False
+
+
+def test_vor_all_position_amount_invariant(fixtures_dir):
+    for suffix in ("a", "b", "c"):
+        parsed = parse_vor(fixtures_dir / f"vor_object_{suffix}.xlsx")
+        assert all(item.amount_gross == round_position(item.quantity, item.price_gross) for item in parsed.items)
+
+
+def test_vor_reparse_same_digest(fixtures_dir):
+    path = fixtures_dir / "vor_object_a.xlsx"
+    first = parse_vor(path)
+    second = parse_vor(path)
+    assert first == second
+    assert first.sha256 == second.sha256

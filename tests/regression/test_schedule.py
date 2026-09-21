@@ -1,17 +1,35 @@
 from decimal import Decimal
-from openpyxl import Workbook
-from construction_os.importers import parse_schedule
 
-def test_schedule_source_data_and_periods(tmp_path):
-    p=tmp_path/"s.xlsx";wb=Workbook();ws=wb.active;ws.title="Календарный график"
-    ws["A2"]="Объект. Период работ: 05.10.2026–15.11.2026."
-    ws["A4"]="Ресурсный план: 05–09.10 до 10 чел.; далее Дятлинка и Ямуга делят мобильную бригаду 10 чел."
-    ws["A5"]="Реверс: сторона 1 → сторона 2"
-    headers=["№ сметы","Наименование работ","Фронт/сторона","Ед.","Объем","Начало","Окончание","Дни","Звено, чел.","Стоимость, руб.","Комментарий"]
-    for c,v in enumerate(headers,1):ws.cell(7,c,v)
-    ws.cell(9,1,1);ws.cell(9,2,"Работа");ws.cell(9,3,"весь объект");ws.cell(9,4,"шт");ws.cell(9,5,2);ws.cell(9,6,"05.10.2026");ws.cell(9,7,"05.10.2026");ws.cell(9,8,1);ws.cell(9,9,6);ws.cell(9,10,Decimal("85720.38"));ws.cell(9,13,2)
-    wb.save(p);s=parse_schedule(p)
-    assert s.tasks[0].days==1 and s.tasks[0].crew_size==Decimal("6")
-    assert s.period_mismatches==() and s.total_amount==Decimal("85720.38")
-    resource=[n for n in s.notes if n["type"]=="resource_plan"][0]["shared_resource"]
-    assert resource["from"]=="2026-10-10" and resource["crew"]=="10"
+from construction_os.importers import parse_schedule, parse_vor, reconcile
+
+
+def test_schedule_total(fixtures_dir):
+    parsed = parse_schedule(fixtures_dir / "schedule_object_a.xlsx")
+    assert parsed.total_amount == Decimal("35656922.00")
+
+
+def test_schedule_has_43_tasks(fixtures_dir):
+    assert len(parse_schedule(fixtures_dir / "schedule_object_a.xlsx").tasks) == 43
+
+
+def test_schedule_periods_sum_to_task_quantity(fixtures_dir):
+    parsed = parse_schedule(fixtures_dir / "schedule_object_a.xlsx")
+    assert parsed.period_mismatches == ()
+
+
+def test_schedule_notes_are_parsed(fixtures_dir):
+    parsed = parse_schedule(fixtures_dir / "schedule_object_a.xlsx")
+    assert {note["type"] for note in parsed.notes} == {"period", "resource_plan", "reverse_scheme", "work_regime"}
+
+
+def test_schedule_resource_sharing_uses_anonymized_names(fixtures_dir):
+    parsed = parse_schedule(fixtures_dir / "schedule_object_a.xlsx")
+    resource = next(note for note in parsed.notes if note["type"] == "resource_plan")["shared_resource"]
+    assert resource["objects"] == ["Северная", "Восточная"]
+    assert resource["crew"] == "10"
+
+
+def test_schedule_reconciles_all_positions(fixtures_dir):
+    vor = parse_vor(fixtures_dir / "vor_object_a.xlsx")
+    schedule = parse_schedule(fixtures_dir / "schedule_object_a.xlsx")
+    assert reconcile(vor, schedule) == []

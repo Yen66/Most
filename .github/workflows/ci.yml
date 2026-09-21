@@ -3,23 +3,35 @@ on:
   pull_request:
   push:
     branches: [main, feat/foundation]
+
 jobs:
   sqlite:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: {python-version: "3.12"}
+        with:
+          python-version: "3.12"
       - run: pip install -e '.[dev]'
+      - name: Generate and verify fixtures
+        run: python scripts/make_fixtures.py --out tests/fixtures/generated
+      - run: ruff format --check .
       - run: ruff check .
-      - run: pytest -q -m 'not postgres'
-      - run: python -m construction_os.cli report --date 2026-09-20 --gross 35656922.00 115397900.00 47635990.22
+      - name: SQLite tests
+        run: pytest -q
+      - name: Acceptance test
+        run: pytest -q tests/regression/test_acceptance_end_to_end.py -vv
+      - name: Migration cycle
+        run: alembic upgrade head && alembic downgrade base && alembic upgrade head
       - name: Repository hygiene
         run: |
           set -o pipefail
           FOUND="$(git log --all --pretty=format: --name-only --diff-filter=A | sort -u | grep -Ei '\.(xlsx|xls|pdf|docx|env)$|data_raw/' || true)"
           printf '%s\n' "$FOUND"
           test -z "$FOUND"
+      - name: No tracked binary fixtures
+        run: git ls-files | grep -Ei '\.(xlsx|xls|pdf|docx|png|jpg|zip)$' && exit 1 || true
+
   postgres:
     runs-on: ubuntu-latest
     services:
@@ -38,7 +50,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: {python-version: "3.12"}
+        with:
+          python-version: "3.12"
       - run: pip install -e '.[dev]'
-      - run: alembic upgrade head
-      - run: pytest -q
+      - name: Generate and verify fixtures
+        run: python scripts/make_fixtures.py --out tests/fixtures/generated
+      - name: PostgreSQL migration cycle
+        run: alembic upgrade head && alembic downgrade base && alembic upgrade head
+      - name: PostgreSQL tests
+        run: pytest -q
