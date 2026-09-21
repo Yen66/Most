@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from decimal import Decimal
@@ -128,13 +129,33 @@ def parse_vor(path: str | Path) -> ParsedVor:
         for row in range(1, formulas_sheet.max_row + 1)
         for column in range(1, min(formulas_sheet.max_column, 7) + 1)
     ).lower()
+    price_is_final = "скоррект" not in all_text
+    semantic_payload = {
+        "sheet": formulas_sheet.title,
+        "vat_rate": str(vat_rate),
+        "price_is_final": price_is_final,
+        "items": [
+            [
+                item.position_no,
+                item.name,
+                item.unit,
+                str(item.quantity),
+                str(item.price_gross),
+                str(item.amount_gross),
+            ]
+            for item in items
+        ],
+    }
+    content_sha256 = sha256(
+        json.dumps(semantic_payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    ).hexdigest()
     return ParsedVor(
         items=tuple(items),
         total_gross=total,
         vat_rate=vat_rate,
-        price_is_final="скоррект" not in all_text,
+        price_is_final=price_is_final,
         discrepancies=tuple(discrepancies),
-        sha256=sha256(source_path.read_bytes()).hexdigest(),
+        sha256=content_sha256,
         header_row=header_row,
         sheet_name=formulas_sheet.title,
     )

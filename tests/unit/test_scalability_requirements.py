@@ -9,8 +9,6 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
-from openpyxl import load_workbook
-
 from construction_os.importers import parse_vor
 from construction_os.references import ContractType, NoteType, SourceType, Unit, get_rate
 from construction_os.storage.models import Base, CompanyRow, ObjectRow, ValueSourceRow
@@ -23,17 +21,6 @@ from construction_os.storage.repositories import (
 ROOT = Path(__file__).resolve().parents[2]
 EXCLUDED_TABLES = {"companies", "reference_rates"}
 FORBIDDEN_RATES = {0.20, 0.22, 1.22, 0.25, 0.30, 0.14}
-
-
-def _shifted_fixture(source: Path, target: Path) -> None:
-    workbook = load_workbook(source)
-    sheet = workbook[workbook.sheetnames[0]]
-    sheet.unmerge_cells("A40:E40")
-    sheet.unmerge_cells("A41:F41")
-    sheet.move_range("A9:F44", rows=2, cols=0, translate=True)
-    sheet.merge_cells("A42:E42")
-    sheet.merge_cells("A43:F43")
-    workbook.save(target)
 
 
 def test_M01_company_id_everywhere():
@@ -212,12 +199,24 @@ def test_M11_calc_and_importers_do_not_branch_on_unit_values():
 
 
 def test_M12_importer_finds_shifted_header(fixtures_dir, tmp_path):
-    target = tmp_path / "shifted.xlsx"
-    _shifted_fixture(fixtures_dir / "vor_object_a.xlsx", target)
-    parsed = parse_vor(target)
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/make_fixtures.py",
+            "--out",
+            str(tmp_path),
+            "--shift-header",
+            "2",
+        ],
+        cwd=ROOT,
+        check=True,
+    )
+    original = parse_vor(fixtures_dir / "vor_object_a.xlsx")
+    parsed = parse_vor(tmp_path / "vor_object_a_shifted_2.xlsx")
     assert parsed.header_row == 11
     assert len(parsed.items) == 29
     assert parsed.total_gross == Decimal("35656922.00")
+    assert parsed.sha256 == original.sha256
 
 
 def test_M03_postgres_trigger_rejects_direct_update(db_session):

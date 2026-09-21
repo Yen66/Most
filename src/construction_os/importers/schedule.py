@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -150,12 +151,39 @@ def parse_schedule(path: str | Path) -> ParsedSchedule:
                 row_no=row,
             )
         )
+    semantic_payload = {
+        "sheet": sheet.title,
+        "object_name": object_name,
+        "notes": [
+            {key: value for key, value in note.items() if key != "cell"}
+            for note in notes
+        ],
+        "tasks": [
+            {
+                "position_no": task.position_no,
+                "name": task.name,
+                "front": task.front,
+                "unit": task.unit,
+                "quantity": str(task.quantity) if task.quantity is not None else None,
+                "start_on": task.start_on.isoformat() if task.start_on else None,
+                "end_on": task.end_on.isoformat() if task.end_on else None,
+                "days": task.days,
+                "crew_size": str(task.crew_size) if task.crew_size is not None else None,
+                "amount": str(task.amount) if task.amount is not None else None,
+                "period_volumes": [str(value) if value is not None else None for value in task.period_volumes],
+            }
+            for task in tasks
+        ],
+    }
+    content_sha256 = sha256(
+        json.dumps(semantic_payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    ).hexdigest()
     return ParsedSchedule(
         tasks=tuple(tasks),
         notes=tuple(notes),
         total_amount=sum_positions(task.amount for task in tasks if task.amount is not None),
         period_mismatches=tuple(period_mismatches),
-        sha256=sha256(source_path.read_bytes()).hexdigest(),
+        sha256=content_sha256,
         sheet_name=sheet.title,
         object_name=object_name,
     )

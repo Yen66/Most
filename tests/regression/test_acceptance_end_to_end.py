@@ -27,9 +27,17 @@ def test_acceptance_end_to_end(fixtures_dir, tmp_path):
     assert portfolio.gross == Decimal("198690812.22")
     assert portfolio.net == Decimal("162861321.49")
 
-    first = parse_vor(paths[0])
-    second = parse_vor(paths[0])
-    assert first == second
+    first_dir = tmp_path / "first"
+    second_dir = tmp_path / "second"
+    for output in (first_dir, second_dir):
+        subprocess.run(
+            [sys.executable, "scripts/make_fixtures.py", "--out", str(output)],
+            check=True,
+        )
+    first = parse_vor(first_dir / "vor_object_a.xlsx")
+    second = parse_vor(second_dir / "vor_object_a.xlsx")
+    assert first.items == second.items
+    assert first.total_gross == second.total_gross
     assert first.sha256 == second.sha256
     for vor in vors:
         assert all(
@@ -53,6 +61,7 @@ def test_acceptance_end_to_end(fixtures_dir, tmp_path):
     shifted = parse_vor(tmp_path / "vor_object_a_shifted_2.xlsx")
     assert len(shifted.items) == 29
     assert shifted.total_gross == Decimal("35656922.00")
+    assert shifted.sha256 == vors[0].sha256
 
     quantity_by_position: dict[int, Decimal] = {}
     amount_by_position: dict[int, Decimal] = {}
