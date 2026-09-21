@@ -1,25 +1,88 @@
 from __future__ import annotations
+
 import argparse
 from datetime import date
 from decimal import Decimal
-from construction_os.calc import calculate_portfolio
-from construction_os.importers import parse_schedule,parse_vor,reconcile
-from construction_os.reports import format_money
 
-def main(argv=None):
-    p=argparse.ArgumentParser(prog="construction-os");sub=p.add_subparsers(dest="cmd",required=True)
-    i=sub.add_parser("import");i.add_argument("path");i.add_argument("--kind",choices=["vor","schedule"],required=True)
-    v=sub.add_parser("verify");v.add_argument("--vor",required=True);v.add_argument("--schedule",required=True)
-    r=sub.add_parser("report");r.add_argument("--date",type=date.fromisoformat,required=True);r.add_argument("--gross",type=Decimal,nargs="+",required=True)
-    a=p.parse_args(argv)
-    if a.cmd=="import":
-        x=parse_vor(a.path) if a.kind=="vor" else parse_schedule(a.path)
-        print(x);return 0
-    if a.cmd=="verify":
-        x=parse_vor(a.vor);s=parse_schedule(a.schedule);d=reconcile(x,s)
-        print(f"VOR total: {x.total_gross}");print(f"Schedule total: {s.total_amount}");print(f"Differences: {len(d)}")
-        return 0 if not d and not s.period_mismatches else 1
-    result=calculate_portfolio(a.gross,a.date)
-    print(f"С НДС: {format_money(result.gross)}");print(f"Без НДС: {format_money(result.net)}");print(f"НДС: {format_money(result.vat)}")
-    return 0
-if __name__=="__main__":raise SystemExit(main())
+from sqlalchemy.orm import Session
+
+from construction_os.importers import parse_schedule, parse_vor, persist_schedule, persist_vor
+from construction_os.reports import format_money
+from construction_os.storage import make_engine
+from construction_os.storage.queries import object_revenues, portfolio_revenue, verify_object
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="construction-os")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    import_parser = subparsers.add_parser("import")
+    import_parser.add_argument("path")
+    import_parser.add_argument("--kind", choices=["vor", "schedule"], required=True)
+    import_parser.add_argument("--company", required=True)
+
+    verify_parser = subparsers.add_parser("verify")
+    verify_parser.add_argument("--object", required=True)
+    verify_parser.add_argument("--company", required=True)
+
+    report_parser = subparsers.add_parser("report")
+    report_parser.add_argument("--date", type=date.fromisoformat, required=True)
+    report_parser.add_argument("--company")
+
+    debug_parser = subparsers.add_parser(
+        "debug-format",
+        help="форматтер чисел; не выполняет расчёт объекта",
+    )
+    debug_parser.add_argument("values", type=Decimal, nargs="*")
+    return parser
+
+
+def main(argv=None) -> int:
+    arguments = _parser().parse_args(argv)
+    engine = make_engine()
+    if arguments.command == "debug-format":
+        for value in arguments.values:
+            print(format_money(value))
+        return 0
+    with Session(engine) as session:
+        if arguments.command == "import":
+            if arguments.kind == "vor":
+                parsed = parse_vor(arguments.path)
+                result = persist_vor(session, arguments.company, parsed, arguments.path)
+            else:
+                parsed = parse_schedule(arguments.path)
+                result = persist_schedule(session, arguments.company, parsed, arguments.path)
+            session.commit()
+            status = "duplicate skipped" if result.skipped_duplicate else "created"
+            print(f"Import: {status}; entities: {result.created_entities}; document: {result.document_id}")
+            return 0
+        if arguments.command == "verify":
+            try:
+                differences = verify_object(session, arguments.company, arguments.object)
+            except LookupError as error:
+                print(str(error))
+                return 2
+            print(f"Differences: {len(differences)}")
+            for position, field in differences:
+                print(f"{position}: {field}")
+            return 0 if not differences else 1
+        rows = object_revenues(session, arguments.date, arguments.company)
+        if not rows:
+            print("No imported objects")
+            return 2
+        for row in rows:
+            print(
+                f"{row.company_name} / {row.object_name}: "
+                f"с НДС {format_money(row.revenue.gross)}; "
+                f"без НДС {format_money(row.revenue.net)}; "
+                f"НДС {format_money(row.revenue.vat)}"
+            )
+        portfolio = portfolio_revenue(rows, arguments.date)
+        print(f"Портфель с НДС: {format_money(portfolio.gross)}")
+        print(f"Портфель без НДС: {format_money(portfolio.net)}")
+        print(f"Портфель НДС: {format_money(portfolio.vat)}")
+        return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
