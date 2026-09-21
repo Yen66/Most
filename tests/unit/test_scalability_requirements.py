@@ -10,9 +10,29 @@ from pathlib import Path
 
 import pytest
 
+from construction_os.calc import calculate_revenue_for_date
 from construction_os.importers import parse_vor
-from construction_os.references import ContractType, NoteType, SourceType, Unit, get_rate
-from construction_os.storage.models import Base, CompanyRow, ObjectRow, ValueSourceRow
+from construction_os.references import (
+    ContractType,
+    NoteType,
+    RateNotFoundError,
+    SourceType,
+    Unit,
+    get_rate,
+)
+from construction_os.storage.models import (
+    Base,
+    CompanyRow,
+    ContractRow,
+    DocumentRow,
+    ObjectRow,
+    ScheduleNoteRow,
+    ScheduleTaskRow,
+    ValueConfirmationRow,
+    ValueRefRow,
+    ValueSourceRow,
+    WorkItemRow,
+)
 from construction_os.storage.repositories import (
     TENANT_REPOSITORIES,
     ImmutableRecordError,
@@ -22,6 +42,87 @@ from construction_os.storage.repositories import (
 ROOT = Path(__file__).resolve().parents[2]
 EXCLUDED_TABLES = {"companies", "reference_rates"}
 FORBIDDEN_RATES = {0.20, 0.22, 1.22, 0.25, 0.30, 0.14}
+
+
+def _seed_tenant_rows(session, company_name: str):
+    company = CompanyRow(name=company_name)
+    session.add(company)
+    session.flush()
+    document = DocumentRow(
+        company_id=company.id,
+        kind="vor",
+        original_filename=f"{company_name}.xlsx",
+        stored_path=f"/{company_name}.xlsx",
+        sha256=(company_name.encode("utf-8").hex() + "0" * 64)[:64],
+    )
+    session.add(document)
+    session.flush()
+    source = ValueSourceRow(
+        company_id=company.id,
+        source_type="document",
+        document_id=document.id,
+        confidence="exact",
+    )
+    contract = ContractRow(company_id=company.id, contract_type="unknown", price_is_final=False)
+    session.add_all([source, contract])
+    session.flush()
+    obj = ObjectRow(company_id=company.id, contract_id=contract.id, name=f"O-{company_name}")
+    session.add(obj)
+    session.flush()
+    work = WorkItemRow(
+        company_id=company.id,
+        object_id=obj.id,
+        contract_id=contract.id,
+        position_no=1,
+        name="Работа",
+        unit="шт",
+        quantity=Decimal("1"),
+        price_gross=Decimal("1"),
+        amount_gross=Decimal("1"),
+        vat_rate=Decimal("0.22"),
+        document_id=document.id,
+        source_id=source.id,
+        valid_from=date(2026, 1, 1),
+    )
+    session.add(work)
+    session.flush()
+    value_ref = ValueRefRow(
+        company_id=company.id,
+        entity_name="work_items",
+        entity_id=work.id,
+        field_name="quantity",
+        source_id=source.id,
+    )
+    task = ScheduleTaskRow(
+        company_id=company.id,
+        object_id=obj.id,
+        position_no=1,
+        name="Работа",
+        quantity=Decimal("1"),
+        amount=Decimal("1"),
+        source_id=source.id,
+    )
+    note = ScheduleNoteRow(
+        company_id=company.id,
+        object_id=obj.id,
+        note_type="period",
+        text="Период",
+        source_id=source.id,
+    )
+    confirmation = ValueConfirmationRow(
+        company_id=company.id,
+        entity_name="work_items",
+        entity_id=work.id,
+        action="imported",
+        actor="test",
+    )
+    session.add_all([value_ref, task, note, confirmation])
+    session.flush()
+    rows = {
+        row.__tablename__: row
+        for row in (document, source, value_ref, contract, obj, work, task, note, confirmation)
+    }
+    return company, rows
 
 
 def test_M01_company_id_everywhere():
@@ -40,35 +141,21 @@ def test_M02_tenant_isolation_repository_catalog_complete():
     assert names == set(Base.metadata.tables) - EXCLUDED_TABLES
 
 
-def test_M02_tenant_isolation_work_items(sqlite_session):
-    company_a = CompanyRow(name="A")
-    company_b = CompanyRow(name="B")
-    sqlite_session.add_all([company_a, company_b])
-    sqlite_session.flush()
-    for company in (company_a, company_b):
-        source = ValueSourceRow(company_id=company.id, source_type="document", confidence="exact")
-        sqlite_session.add(source)
-        sqlite_session.flush()
-        obj = ObjectRow(company_id=company.id, name=f"O-{company.name}")
-        sqlite_session.add(obj)
-        sqlite_session.flush()
-        WorkItemRepository(sqlite_session).add(
-            company.id,
-            object_id=obj.id,
-            position_no=1,
-            name="Работа",
-            unit="шт",
-            quantity=Decimal("1"),
-            price_gross=Decimal("1"),
-            amount_gross=Decimal("1"),
-            vat_rate=Decimal("0.22"),
-            source_id=source.id,
-            valid_from=date(2026, 1, 1),
-        )
-    rows_a = WorkItemRepository(sqlite_session).list_current(company_a.id)
-    rows_b = WorkItemRepository(sqlite_session).list_current(company_b.id)
-    assert {row.company_id for row in rows_a} == {company_a.id}
-    assert {row.company_id for row in rows_b} == {company_b.id}
+def test_M02_tenant_isolation_all_repositories(sqlite_session):
+    company_a, rows_a = _seed_tenant_rows(sqlite_session, "A")
+    company_b, rows_b = _seed_tenant_rows(sqlite_session, "B")
+    for repository_type in TENANT_REPOSITORIES:
+        table_name = repository_type.model.__tablename__
+        repository = repository_type(sqlite_session)
+        row_a = rows_a[table_name]
+        row_b = rows_b[table_name]
+        assert repository.get(company_a.id, row_a.id).id == row_a.id
+        assert repository.get(company_a.id, row_b.id) is None
+        assert repository.get(company_b.id, row_a.id) is None
+        ids_a = {row.id for row in repository.list_current(company_a.id)}
+        ids_b = {row.id for row in repository.list_current(company_b.id)}
+        assert row_a.id in ids_a and row_b.id not in ids_a
+        assert row_b.id in ids_b and row_a.id not in ids_b
 
 
 def test_M03_values_are_superseded_not_updated(sqlite_session):
@@ -99,7 +186,10 @@ def test_M03_values_are_superseded_not_updated(sqlite_session):
         company.id, old.id, {"price_gross": Decimal("11")}, "correction", "test", date(2026, 2, 1)
     )
     assert new.id != old.id
-    assert repo.get_on_date(company.id, old.id, date(2026, 1, 15)).price_gross == Decimal("10")
+    historical = repo.get_on_date(company.id, old.id, date(2026, 1, 15))
+    assert historical.price_gross == Decimal("10")
+    assert historical.source_id == source.id
+    assert new.source_id == source.id
     with pytest.raises(ImmutableRecordError):
         repo.update(old.id)
     with pytest.raises(ImmutableRecordError):
@@ -123,8 +213,12 @@ def test_M04_no_rate_literals_outside_references():
 
 
 def test_M05_reference_catalog_is_mandatory():
+    assert str(get_rate("VAT_RATE", date(2025, 9, 1)).value) == "0.20"
+    assert str(get_rate("VAT_RATE", date(2026, 9, 1)).value) == "0.22"
     assert str(get_rate("VAT_RATE", date(2025, 12, 31)).value) == "0.20"
     assert str(get_rate("VAT_RATE", date(2026, 1, 1)).value) == "0.22"
+    with pytest.raises(RateNotFoundError):
+        get_rate("VAT_RATE", date(2010, 1, 1))
 
 
 def test_M06_domain_does_not_import_sqlalchemy():
@@ -142,6 +236,9 @@ def test_M06_domain_does_not_import_sqlalchemy():
 
 
 def test_M07_calc_is_pure_from_storage_and_io():
+    result = calculate_revenue_for_date(Decimal("122.00"), date(2026, 9, 20))
+    assert result.net == Decimal("100.00")
+    assert result.vat == Decimal("22.00")
     for path in (ROOT / "src" / "construction_os" / "calc").rglob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         imports = []
@@ -248,6 +345,10 @@ def test_M03_postgres_trigger_rejects_direct_update(db_session):
     from sqlalchemy import text
 
     with pytest.raises(Exception, match="immutable"):
-        db_session.execute(
-            text("UPDATE work_items SET price_gross = 11 WHERE id = :id"), {"id": item.id}
-        )
+        with db_session.begin_nested():
+            db_session.execute(
+                text("UPDATE work_items SET price_gross = 11 WHERE id = :id"), {"id": item.id}
+            )
+    with pytest.raises(Exception, match="immutable"):
+        with db_session.begin_nested():
+            db_session.execute(text("DELETE FROM work_items WHERE id = :id"), {"id": item.id})
