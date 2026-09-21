@@ -128,7 +128,6 @@ def build_vor(path: Path, rows: list[list], object_name: str, header_shift: int 
             sheet.unmerge_cells(str(merged))
         sheet.move_range(f"A9:F{note_row + 2}", rows=header_shift, cols=0, translate=True)
         shifted_total = total_row + header_shift
-        shifted_note = note_row + header_shift
         sheet.merge_cells(
             start_row=shifted_total, start_column=1, end_row=shifted_total, end_column=5
         )
