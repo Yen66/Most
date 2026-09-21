@@ -344,11 +344,9 @@ def test_M03_postgres_trigger_rejects_direct_update(db_session):
     )
     from sqlalchemy import text
 
-    with pytest.raises(Exception, match="immutable"):
-        with db_session.begin_nested():
-            db_session.execute(
-                text("UPDATE work_items SET price_gross = 11 WHERE id = :id"), {"id": item.id}
-            )
-    with pytest.raises(Exception, match="immutable"):
-        with db_session.begin_nested():
-            db_session.execute(text("DELETE FROM work_items WHERE id = :id"), {"id": item.id})
+    with pytest.raises(Exception, match="immutable"), db_session.begin_nested():
+        db_session.execute(
+            text("UPDATE work_items SET price_gross = 11 WHERE id = :id"), {"id": item.id}
+        )
+    with pytest.raises(Exception, match="immutable"), db_session.begin_nested():
+        db_session.execute(text("DELETE FROM work_items WHERE id = :id"), {"id": item.id})
