@@ -30,7 +30,7 @@ def utcnow() -> datetime:
 
 
 class Base(DeclarativeBase):
-    pass
+    """Declarative base for persistence models."""
 
 
 class CompanyRow(Base):

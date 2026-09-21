@@ -13,7 +13,7 @@ from construction_os.money import as_decimal, money, round_position, sum_positio
 
 
 class VorImportError(ValueError):
-    pass
+    """Raised when a VOR workbook cannot be parsed deterministically."""
 
 
 @dataclass(frozen=True, slots=True)

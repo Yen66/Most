@@ -22,7 +22,7 @@ from .models import (
 
 
 class ImmutableRecordError(RuntimeError):
-    pass
+    """Raised when immutable repository data is mutated in place."""
 
 
 class BaseRepository:

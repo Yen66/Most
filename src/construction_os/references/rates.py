@@ -16,7 +16,7 @@ class RateType(StrEnum):
 
 
 class RateNotFoundError(LookupError):
-    pass
+    """Raised when a dated reference rate cannot be resolved uniquely."""
 
 
 @dataclass(frozen=True, slots=True)
