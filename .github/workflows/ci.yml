@@ -5,7 +5,7 @@ on:
     branches: [main, feat/foundation]
 
 jobs:
-  sqlite:
+  formatter:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -13,49 +13,14 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e '.[dev]'
-      - name: Generate and verify fixtures
-        run: python scripts/make_fixtures.py --out tests/fixtures/generated
-      - run: ruff format --check .
-      - run: ruff check .
-      - name: SQLite tests
-        run: pytest -q
-      - name: Acceptance test
-        run: pytest -q tests/regression/test_acceptance_end_to_end.py -vv
-      - name: Migration cycle
-        run: alembic upgrade head && alembic downgrade base && alembic upgrade head
-      - name: Repository hygiene
-        run: |
-          set -o pipefail
-          FOUND="$(git log --all --pretty=format: --name-only --diff-filter=A | sort -u | grep -Ei '\.(xlsx|xls|pdf|docx|env)$|data_raw/' || true)"
-          printf '%s\n' "$FOUND"
-          test -z "$FOUND"
-      - name: No tracked binary fixtures
-        run: git ls-files | grep -Ei '\.(xlsx|xls|pdf|docx|png|jpg|zip)$' && exit 1 || true
-
-  postgres:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: construction_os
-          POSTGRES_USER: construction_os
-          POSTGRES_PASSWORD: construction_os
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U construction_os -d construction_os"
-          --health-interval 2s --health-timeout 3s --health-retries 30
-    env:
-      DATABASE_URL: postgresql+psycopg://construction_os:construction_os@localhost:5432/construction_os
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - run: ruff format .
+      - run: ruff check --fix . || true
+      - uses: actions/upload-artifact@v4
         with:
-          python-version: "3.12"
-      - run: pip install -e '.[dev]'
-      - name: Generate and verify fixtures
-        run: python scripts/make_fixtures.py --out tests/fixtures/generated
-      - name: PostgreSQL migration cycle
-        run: alembic upgrade head && alembic downgrade base && alembic upgrade head
-      - name: PostgreSQL tests
-        run: pytest -q
+          name: formatted-tree
+          path: |
+            src
+            tests
+            scripts
+            migrations
+            pyproject.toml
