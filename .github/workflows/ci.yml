@@ -23,6 +23,26 @@ jobs:
         run: pytest -q tests/regression/test_acceptance_end_to_end.py -vv
       - name: Migration cycle
         run: alembic upgrade head && alembic downgrade base && alembic upgrade head
+      - name: Economics references and CLI demo
+        run: |
+          python scripts/make_reference_values.py
+          python scripts/make_cost_template.py --out /tmp/direct-costs.xlsx
+          construction-os costs template --out /tmp/costs.xlsx
+          DATABASE_URL=sqlite:///construction_os.db python scripts/seed_economics_demo.py /tmp/costs.xlsx
+          DATABASE_URL=sqlite:///construction_os.db construction-os costs import /tmp/costs.xlsx --company "Demo Co"
+          DATABASE_URL=sqlite:///construction_os.db construction-os cost-report --company "Demo Co" --object "Demo Object" --date 2026-09-20
+          DATABASE_URL=sqlite:///construction_os.db construction-os breakeven --company "Demo Co" --object "Demo Object" --date 2026-09-20
+          DATABASE_URL=sqlite:///construction_os.db construction-os scenario --company "Demo Co" --object "Demo Object" --date 2026-09-20 --name "MAT +10" --cost-multiplier 1.10 --scope cost_item --scope-value MAT
+          pytest --collect-only -q | tail -1
+          find src tests scripts -name '*.py' | xargs wc -l | tail -1
+          python - <<'PY'
+          from construction_os.storage.models import Base
+          from construction_os.storage.repositories import ALL_REPOSITORIES, TENANT_REPOSITORIES
+          print("tables", len(Base.metadata.tables))
+          print("tenant_repositories", len(TENANT_REPOSITORIES))
+          print("all_repositories", len(ALL_REPOSITORIES))
+          print("excluded_tables", 3)
+          PY
       - name: Repository hygiene
         run: |
           set -o pipefail
