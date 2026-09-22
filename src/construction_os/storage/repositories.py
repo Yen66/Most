@@ -161,6 +161,8 @@ class BaseRepository:
             )
         )
         self.session.flush()
+        if self.session.bind.dialect.name == "postgresql":
+            self.session.execute(text("SET LOCAL construction_os.allow_supersede='off'"))
         return new
 
     def update(self, *args, **kwargs):
