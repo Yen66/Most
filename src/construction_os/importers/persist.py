@@ -84,15 +84,17 @@ def _new_object_with_contract(
     company_id: UUID,
     object_name: str,
     price_is_final: bool,
+    effective_on: date,
 ) -> ObjectRow:
     contract = ContractRow(
         company_id=company_id,
         contract_type=ContractType.UNKNOWN.value,
         price_is_final=price_is_final,
+        valid_from=effective_on,
     )
     session.add(contract)
     session.flush()
-    object_row = ObjectRow(company_id=company_id, contract_id=contract.id, name=object_name)
+    object_row = ObjectRow(company_id=company_id, contract_id=contract.id, name=object_name, valid_from=effective_on)
     session.add(object_row)
     session.flush()
     return object_row
@@ -113,14 +115,14 @@ def persist_vor(
     document = _create_document(session, company.id, path, "vor", parsed.sha256)
     source = _create_source(session, company.id, document.id, parsed.sheet_name)
     object_name = path.stem
+    effective_on = imported_on or date.today()
     object_row = session.scalar(
-        select(ObjectRow).where(ObjectRow.company_id == company.id, ObjectRow.name == object_name)
+        select(ObjectRow).where(ObjectRow.company_id == company.id, ObjectRow.name == object_name, ObjectRow.valid_to.is_(None))
     )
     if object_row is None:
         object_row = _new_object_with_contract(
-            session, company.id, object_name, parsed.price_is_final
+            session, company.id, object_name, parsed.price_is_final, effective_on
         )
-    effective_on = imported_on or date.today()
     created = 4
     for item in parsed.items:
         work_item = WorkItemRow(
@@ -182,9 +184,9 @@ def persist_vor(
 
 
 def _object_for_schedule(
-    session, company_id: UUID, parsed: ParsedSchedule, path: Path
+    session, company_id: UUID, parsed: ParsedSchedule, path: Path, effective_on: date
 ) -> ObjectRow:
-    candidates = list(session.scalars(select(ObjectRow).where(ObjectRow.company_id == company_id)))
+    candidates = list(session.scalars(select(ObjectRow).where(ObjectRow.company_id == company_id, ObjectRow.valid_to.is_(None))))
     matching: list[ObjectRow] = []
     for candidate in candidates:
         total = session.scalar(
@@ -203,11 +205,12 @@ def _object_for_schedule(
             select(ObjectRow).where(
                 ObjectRow.company_id == company_id,
                 ObjectRow.name == parsed.object_name,
+                ObjectRow.valid_to.is_(None),
             )
         )
         if named is not None:
             return named
-    return _new_object_with_contract(session, company_id, path.stem, False)
+    return _new_object_with_contract(session, company_id, path.stem, False, effective_on)
 
 
 def persist_schedule(
@@ -223,7 +226,8 @@ def persist_schedule(
         return PersistResult(existing_document.id, company.id, None, 0, True)
     document = _create_document(session, company.id, path, "schedule", parsed.sha256)
     source = _create_source(session, company.id, document.id, parsed.sheet_name)
-    object_row = _object_for_schedule(session, company.id, parsed, path)
+    effective_on = date.today()
+    object_row = _object_for_schedule(session, company.id, parsed, path, effective_on)
     created = 2
     for task in parsed.tasks:
         session.add(
@@ -244,6 +248,7 @@ def persist_schedule(
                     str(value) if value is not None else None for value in task.period_volumes
                 ],
                 source_id=source.id,
+                valid_from=effective_on,
             )
         )
         created += 1
