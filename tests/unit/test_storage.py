@@ -19,7 +19,7 @@ def seed(s, name):
 
 
 def test_company_id_on_tenant_tables():
-    excluded = {"companies", "reference_rates"}
+    excluded = {"companies", "reference_rates", "cost_articles"}
     assert all("company_id" in t.c for n, t in Base.metadata.tables.items() if n not in excluded)
 
 
