@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, replace
 from decimal import Decimal
+
 from construction_os.money import money
+
 from .costs import CostArticle, CostEntry
 
 

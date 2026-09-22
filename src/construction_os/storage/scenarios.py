@@ -1,9 +1,13 @@
 from __future__ import annotations
+
 from datetime import date
 from decimal import Decimal
+
 from sqlalchemy import select
+
 from construction_os.calc import CostArticle, ScenarioParam, validate_scenario_param
 from construction_os.references import SourceType
+
 from .models import CostArticleRow, ScenarioParamRow, ScenarioRow, ValueRefRow, ValueSourceRow
 from .repositories import ScenarioRepository
 

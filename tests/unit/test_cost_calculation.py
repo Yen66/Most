@@ -1,6 +1,8 @@
 from datetime import date
 from decimal import Decimal
+
 import pytest
+
 from construction_os.calc import (
     CostArticle,
     CostEntry,

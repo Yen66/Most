@@ -1,11 +1,15 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from uuid import UUID
+
 from sqlalchemy import func, select
+
 from construction_os.calc import RevenueResult, calculate_revenue_for_date
 from construction_os.money import money, sum_positions
+
 from .models import CompanyRow, ObjectRow, ScheduleTaskRow, WorkItemRow
 
 

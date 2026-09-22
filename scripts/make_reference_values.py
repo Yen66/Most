@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from datetime import date
 from decimal import Decimal
+
 from construction_os.calc import (
     breakeven_net,
     calculate_profit,

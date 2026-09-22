@@ -1,9 +1,13 @@
 from __future__ import annotations
-import os, sys
+
+import os
+import sys
 from datetime import date
 from decimal import Decimal
+
 from openpyxl import load_workbook
 from sqlalchemy.orm import Session
+
 from construction_os.storage import make_engine
 from construction_os.storage.models import CompanyRow, ObjectRow, ValueSourceRow, WorkItemRow
 

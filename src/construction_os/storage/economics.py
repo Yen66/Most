@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
+
 from sqlalchemy import func, select
+
 from construction_os.calc import (
     CostArticle,
     CostEntry,
@@ -17,6 +20,7 @@ from construction_os.calc import (
 )
 from construction_os.money import money
 from construction_os.references import RateType, get_rate
+
 from .models import CompanyRow, ContractRow, CostArticleRow, CostEntryRow, ObjectRow, WorkItemRow
 from .queries import object_lineage_ids
 

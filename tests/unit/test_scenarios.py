@@ -1,8 +1,10 @@
 from datetime import date
 from decimal import Decimal
+
 import pytest
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+
 from construction_os.calc import CostArticle, ScenarioParam, validate_scenario_param
 from construction_os.references import DEFAULT_COST_ARTICLES
 from construction_os.storage.models import (

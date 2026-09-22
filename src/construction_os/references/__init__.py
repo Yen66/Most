@@ -12,12 +12,12 @@ from .cost_articles import DEFAULT_COST_ARTICLES
 from .rates import INITIAL_RATES, RateNotFoundError, RateType, ReferenceRate, get_rate
 
 __all__ = [
+    "DEFAULT_COST_ARTICLES",
     "INITIAL_RATES",
     "AmountType",
     "Confidence",
     "ContractType",
     "CostCategory",
-    "DEFAULT_COST_ARTICLES",
     "NoteType",
     "RateNotFoundError",
     "RateType",

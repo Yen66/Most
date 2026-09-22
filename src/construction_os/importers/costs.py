@@ -1,10 +1,13 @@
 from __future__ import annotations
+
 import hashlib
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
+
 from openpyxl import load_workbook
+
 from construction_os.money import as_decimal, money
 
 

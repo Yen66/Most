@@ -1,10 +1,13 @@
 from __future__ import annotations
+
 import argparse
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
 from construction_os.calc import (
     CostArticle,
     CostEntry,

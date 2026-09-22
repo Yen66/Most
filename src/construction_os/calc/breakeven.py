@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from decimal import Decimal
+
 from construction_os.money import add_vat, money
 
 

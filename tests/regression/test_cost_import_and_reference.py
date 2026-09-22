@@ -1,10 +1,13 @@
+import subprocess
+import sys
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
-import subprocess, sys
+
 import pytest
 from openpyxl import load_workbook
 from sqlalchemy import select
+
 from construction_os.importers import CostImportError, article_codes, parse_costs, persist_costs
 from construction_os.references import DEFAULT_COST_ARTICLES
 from construction_os.storage.models import (
