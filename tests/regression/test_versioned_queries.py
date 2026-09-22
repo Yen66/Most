@@ -6,7 +6,6 @@ from sqlalchemy import text
 
 from construction_os.storage.models import (
     CompanyRow,
-    ObjectRow,
     ScheduleTaskRow,
     ValueSourceRow,
 )
