@@ -1,34 +1,24 @@
 # Словарь данных
 
-## companies
-Корневая организация. `id UUID` — PK, обязателен, пример `...`; `name TEXT` — уникальное имя, обязательно, пример «Подрядчик»; `inn TEXT` — ИНН, необязательно.
-
-## documents
-Импортированный документ. `id UUID` PK; `company_id UUID` обязателен, FK и индекс; `kind TEXT` — `vor|schedule`; `original_filename TEXT` — исходное имя; `stored_path TEXT` — путь источника; `sha256 CHAR(64)` — контрольная сумма; `uploaded_at TIMESTAMP` — время импорта; `meta JSON` — дополнительные метаданные. Уникальность `(company_id, sha256)`.
-
-## value_sources
-Источник значения. `id UUID` PK; `company_id UUID` обязателен/индекс; `source_type TEXT` — тип источника; `document_id UUID` — документ; `sheet TEXT` — лист; `cell_or_range TEXT` — ячейка/диапазон, пример `D11`; `row_no INT` — строка; `confidence TEXT` — статус достоверности; `note TEXT` — пояснение.
-
-## value_refs
-Связь значения сущности с источником. `id UUID` PK; `company_id UUID` обязателен/индекс; `entity_name TEXT` — таблица/сущность; `entity_id UUID` — идентификатор; `field_name TEXT` — поле, пример `quantity`; `source_id UUID` — FK на `value_sources`.
-
-## reference_rates
-Глобальные датированные ставки. `id UUID` PK; `rate_type TEXT` — тип; `value NUMERIC(12,6)` — ставка; `valid_from DATE` — начало действия; `valid_to DATE` — конец или NULL; `document_number TEXT` и `document_date DATE` — нормативный источник. Уникальность `(rate_type, valid_from)`.
+Существующие таблицы фундамента сохраняют назначение. Ниже — изменения задач 5–8.
 
 ## contracts
-Контракт. `id UUID` PK; `company_id UUID` обязателен/индекс; `contract_type TEXT`; `number TEXT`; `price_is_final BOOL`; `advance_pct NUMERIC`; `payment_delay_days INT`; `security_amount NUMERIC`; `warranty_retention_pct NUMERIC`; `treasury_account BOOL`; `currency CHAR(3)`, пример `RUB`; `vat_rate_id UUID` — ссылка на ставку. Неизвестные условия остаются NULL.
+Добавлены `signed_on DATE NULL`, `award_reduction_factor NUMERIC(9,6) NULL`, `valid_from DATE NOT NULL`, `valid_to`, `superseded_by`, `replace_reason`. Активная версия: `valid_to IS NULL`. Частичный индекс `uq_contract_current(company_id, number)` задан для PostgreSQL и SQLite. Фактор снижения хранится, но в выручку не применяется.
 
 ## objects
-Объект строительства. `id UUID` PK; `company_id UUID` обязателен/индекс; `contract_id UUID`; `name TEXT` — техническое или подтверждённое имя; `object_type TEXT`; `location_text TEXT`. Уникальность `(company_id, name)`.
-
-## work_items
-Позиция ведомости. `id UUID` PK; `company_id UUID` обязателен/индекс; `object_id UUID`; `contract_id UUID`; `position_no INT`; `name TEXT`; `unit TEXT`; `quantity NUMERIC(18,4)`; `price_gross NUMERIC(18,4)`; `amount_gross NUMERIC(18,2)`; `vat_rate NUMERIC(9,6)`; `document_id UUID`; `source_id UUID`; `valid_from DATE`; `valid_to DATE`; `superseded_by UUID`; `replace_reason TEXT`. Текущая версия имеет `valid_to IS NULL`.
+Версионируется четырьмя полями периода. Старый непарциальный `UNIQUE(company_id,name)` снят. Активная уникальность — `uq_object_current(company_id,name) WHERE valid_to IS NULL` для обоих диалектов.
 
 ## schedule_tasks
-Строка календарного графика. `id UUID` PK; `company_id UUID` обязателен/индекс; `object_id UUID`; `position_no INT`; `name TEXT`; `front TEXT`; `unit TEXT`; `quantity NUMERIC(18,4)`; `start_on/end_on DATE`; `days INT`; `crew_size NUMERIC(9,2)`; `amount NUMERIC(18,2)`; `period_volumes JSON`; `source_id UUID`.
+Добавлены четыре поля версии. Активная уникальность: `(company_id, object_id, position_no, front) WHERE valid_to IS NULL` с `postgresql_where` и `sqlite_where`.
 
-## schedule_notes
-Текстовая предпосылка графика. `id UUID` PK; `company_id UUID` обязателен/индекс; `object_id UUID`; `note_type TEXT`; `text TEXT`; `parsed JSON`; `cell TEXT`; `source_id UUID`.
+## cost_articles
+Глобальный плоский справочник: `id`, `code UNIQUE`, `category`, `name`, `unit`, `is_active`, `sort_order`. `company_id` отсутствует по ADR-0011. CHECK категории: `direct|indirect|financial|other`.
 
-## value_confirmations
-Неизменяемый журнал подтверждений. `id UUID` PK; `company_id UUID` обязателен/индекс; `entity_name TEXT`; `entity_id UUID`; `field_name TEXT`; `action TEXT`, пример `imported|replaced`; `old_value/new_value TEXT`; `reason TEXT`; `actor TEXT`; `acted_at TIMESTAMP`.
+## cost_entries
+Tenant-таблица затрат: связи с объектом/договором/позицией, `article_code` FK, `quantity`, `unit`, `price`, `amount`, `amount_type`, `rate_value`, `vat_mode`, `vat_rate`, `source_id`, поля версии, `created_at`, `created_by`. `amount_net` и `vat_amount` отсутствуют. CHECK гарантирует enum и ровно одну форму суммы: fixed→amount, share_of_revenue→rate_value.
+
+## scenarios
+Версионируемый сценарий с `company_id`, `name`, `object_id`, `contract_id`, `base_date`, provenance, автором и полями версии. Активный индекс `(company_id, object_id, name) WHERE valid_to IS NULL` для PostgreSQL и SQLite.
+
+## scenario_params
+Immutable-дочерняя таблица без полей версии: `param_type`, `scope`, `scope_value`, `param_value`, автор и время. CHECK контролируют тип параметра, scope, согласованность scope_value и положительное значение.
