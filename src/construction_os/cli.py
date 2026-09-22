@@ -181,7 +181,7 @@ def main(argv=None) -> int:
             print(format_money(value))
         return 0
     if args.command == "costs" and args.costs_command == "template":
-        from scripts.make_cost_template import make_template
+        from construction_os.importers.cost_template import make_template
 
         make_template(Path(args.out))
         print(f"cost template: {args.out}")
