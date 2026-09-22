@@ -4,7 +4,12 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import text
 
-from construction_os.storage.models import CompanyRow, ObjectRow, ScheduleTaskRow, ValueSourceRow
+from construction_os.storage.models import (
+    CompanyRow,
+    ObjectRow,
+    ScheduleTaskRow,
+    ValueSourceRow,
+)
 from construction_os.storage.queries import object_revenues, verify_object
 from construction_os.storage.repositories import ObjectRepository, WorkItemRepository
 
@@ -78,23 +83,23 @@ def test_postgres_new_versioned_tables_reject_direct_update_delete(db_session, t
     target_id = old.id
     if table == "contracts":
         db_session.execute(
-            text("SET LOCAL construction_os.allow_supersede='on'")
-        )
-        db_session.execute(
             text(
                 "INSERT INTO contracts (id, company_id, contract_type, number, price_is_final, currency, valid_from) "
                 "VALUES (gen_random_uuid(), :company_id, 'unknown', 'PG-1', false, 'RUB', '2026-01-01')"
             ),
             {"company_id": company.id},
         )
-        db_session.execute(text("SET LOCAL construction_os.allow_supersede='off'"))
-        target_id = db_session.execute(text("SELECT id FROM contracts WHERE number='PG-1'")).scalar_one()
+        target_id = db_session.execute(
+            text("SELECT id FROM contracts WHERE number='PG-1'")
+        ).scalar_one()
     elif table == "schedule_tasks":
         target_id = db_session.execute(
             text("SELECT id FROM schedule_tasks WHERE company_id=:company_id LIMIT 1"),
             {"company_id": company.id},
         ).scalar_one()
     with pytest.raises(Exception, match="immutable"), db_session.begin_nested():
-        db_session.execute(text(f"UPDATE {table} SET replace_reason='x' WHERE id=:id"), {"id": target_id})
+        db_session.execute(
+            text(f"UPDATE {table} SET replace_reason='x' WHERE id=:id"), {"id": target_id}
+        )
     with pytest.raises(Exception, match="immutable"), db_session.begin_nested():
         db_session.execute(text(f"DELETE FROM {table} WHERE id=:id"), {"id": target_id})
