@@ -55,7 +55,9 @@ def test_contract_new_fields_types():
     "table", ["contracts", "objects", "work_items", "schedule_tasks", "cost_entries", "scenarios"]
 )
 def test_versioned_tables_have_four_fields(table):
-    assert {"valid_from", "valid_to", "superseded_by", "replace_reason"} <= set(Base.metadata.tables[table].c.keys())
+    assert {"valid_from", "valid_to", "superseded_by", "replace_reason"} <= set(
+        Base.metadata.tables[table].c.keys()
+    )
 
 
 def test_cost_articles_are_global():
