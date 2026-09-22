@@ -6,8 +6,6 @@ from pathlib import Path
 from construction_os.importers.cost_template import make_template
 
 
-
-
 def main(argv=None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--out", required=True)
