@@ -24,7 +24,7 @@ def p(v):
     return f"{v:.2f}%"
 
 
-def case(title, production, fixed, share, revenue=D("1000000")):
+def case(title, production, fixed, share, revenue=None):\n    revenue = revenue or D("1000000")
     tax = get_rate(RateType.PROFIT_TAX, ON_DATE).value
     vat = get_rate(RateType.VAT_RATE, ON_DATE).value
     result = calculate_profit(revenue, production, fixed, share, tax)
