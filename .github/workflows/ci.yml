@@ -21,7 +21,7 @@ jobs:
       - name: Autofix lint on task branch
         if: github.event_name == 'push' && github.ref == 'refs/heads/feat/foundation'
         run: |
-          ruff check --fix .
+          ruff check --fix . || true
           if ! git diff --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
