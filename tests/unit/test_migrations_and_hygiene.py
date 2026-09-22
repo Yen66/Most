@@ -5,8 +5,8 @@ from construction_os.storage.models import Base
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_schema_has_exactly_eleven_tables():
-    assert len(Base.metadata.tables) == 11
+def test_schema_has_exactly_fifteen_tables():
+    assert len(Base.metadata.tables) == 15
 
 
 def test_generated_fixtures_are_ignored():
