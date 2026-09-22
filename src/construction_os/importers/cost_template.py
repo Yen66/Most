@@ -17,6 +17,10 @@ def make_template(path: Path) -> None:
     for row in DEFAULT_COST_ARTICLES:
         catalog.append(row)
     info = workbook.create_sheet("Инструкция")
-    info.append(["Для fixed заполните amount; для share_of_revenue amount оставьте пустым и заполните rate_value."])
+    info.append(
+        [
+            "Для fixed заполните amount; для share_of_revenue amount оставьте пустым и заполните rate_value."
+        ]
+    )
     info.append(["Пустой amount_type означает fixed. vat_mode: gross / net / unknown."])
     workbook.save(path)
