@@ -407,7 +407,7 @@ def test_M03_postgres_trigger_rejects_direct_update(db_session):
         source_id=source.id,
         valid_from=date(2026, 1, 1),
     )
-    from sqlalchemy import text
+    from sqlalchemy import select, text
 
     with pytest.raises(Exception, match="immutable"), db_session.begin_nested():
         db_session.execute(
