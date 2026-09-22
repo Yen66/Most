@@ -257,7 +257,9 @@ def test_M03_values_are_superseded_not_updated(sqlite_session):
         "cost_entries",
         "scenarios",
     ):
-        assert {"valid_from", "valid_to", "superseded_by", "replace_reason"} <= set(Base.metadata.tables[table_name].c.keys())
+        assert {"valid_from", "valid_to", "superseded_by", "replace_reason"} <= set(
+            Base.metadata.tables[table_name].c.keys()
+        )
 
 
 def test_M04_no_rate_literals_outside_references():
