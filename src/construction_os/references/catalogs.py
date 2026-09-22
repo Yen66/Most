@@ -37,3 +37,21 @@ class NoteType(StrEnum):
     RESOURCE_PLAN = "resource_plan"
     REVERSE_SCHEME = "reverse_scheme"
     WORK_REGIME = "work_regime"
+
+
+class CostCategory(StrEnum):
+    DIRECT = "direct"
+    INDIRECT = "indirect"
+    FINANCIAL = "financial"
+    OTHER = "other"
+
+
+class VatMode(StrEnum):
+    GROSS = "gross"
+    NET = "net"
+    UNKNOWN = "unknown"
+
+
+class AmountType(StrEnum):
+    FIXED = "fixed"
+    SHARE_OF_REVENUE = "share_of_revenue"
