@@ -9,6 +9,7 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
+from sqlalchemy import select
 
 from construction_os.calc import calculate_revenue_for_date
 from construction_os.importers import parse_vor
