@@ -94,7 +94,9 @@ def _new_object_with_contract(
     )
     session.add(contract)
     session.flush()
-    object_row = ObjectRow(company_id=company_id, contract_id=contract.id, name=object_name, valid_from=effective_on)
+    object_row = ObjectRow(
+        company_id=company_id, contract_id=contract.id, name=object_name, valid_from=effective_on
+    )
     session.add(object_row)
     session.flush()
     return object_row
@@ -117,7 +119,11 @@ def persist_vor(
     object_name = path.stem
     effective_on = imported_on or date.today()
     object_row = session.scalar(
-        select(ObjectRow).where(ObjectRow.company_id == company.id, ObjectRow.name == object_name, ObjectRow.valid_to.is_(None))
+        select(ObjectRow).where(
+            ObjectRow.company_id == company.id,
+            ObjectRow.name == object_name,
+            ObjectRow.valid_to.is_(None),
+        )
     )
     if object_row is None:
         object_row = _new_object_with_contract(
@@ -186,7 +192,13 @@ def persist_vor(
 def _object_for_schedule(
     session, company_id: UUID, parsed: ParsedSchedule, path: Path, effective_on: date
 ) -> ObjectRow:
-    candidates = list(session.scalars(select(ObjectRow).where(ObjectRow.company_id == company_id, ObjectRow.valid_to.is_(None))))
+    candidates = list(
+        session.scalars(
+            select(ObjectRow).where(
+                ObjectRow.company_id == company_id, ObjectRow.valid_to.is_(None)
+            )
+        )
+    )
     matching: list[ObjectRow] = []
     for candidate in candidates:
         total = session.scalar(

@@ -127,16 +127,54 @@ def _seed_tenant_rows(session, company_name: str):
         article = CostArticleRow(code="MAT", category="direct", name="Материалы", is_active=True)
         session.add(article)
         session.flush()
-    cost = CostEntryRow(company_id=company.id, object_id=obj.id, article_code="MAT", amount=Decimal("1"), amount_type="fixed", vat_mode="net", source_id=source.id, valid_from=date(2026, 1, 1), created_by="test")
-    scenario = ScenarioRow(company_id=company.id, name=f"S-{company_name}", object_id=obj.id, base_date=date(2026, 1, 1), source_id=source.id, created_by="test", valid_from=date(2026, 1, 1))
+    cost = CostEntryRow(
+        company_id=company.id,
+        object_id=obj.id,
+        article_code="MAT",
+        amount=Decimal("1"),
+        amount_type="fixed",
+        vat_mode="net",
+        source_id=source.id,
+        valid_from=date(2026, 1, 1),
+        created_by="test",
+    )
+    scenario = ScenarioRow(
+        company_id=company.id,
+        name=f"S-{company_name}",
+        object_id=obj.id,
+        base_date=date(2026, 1, 1),
+        source_id=source.id,
+        created_by="test",
+        valid_from=date(2026, 1, 1),
+    )
     session.add_all([cost, scenario])
     session.flush()
-    param = ScenarioParamRow(company_id=company.id, scenario_id=scenario.id, param_type="cost_multiplier", scope="all", param_value=Decimal("1"), created_by="test")
+    param = ScenarioParamRow(
+        company_id=company.id,
+        scenario_id=scenario.id,
+        param_type="cost_multiplier",
+        scope="all",
+        param_value=Decimal("1"),
+        created_by="test",
+    )
     session.add(param)
     session.flush()
     rows = {
         row.__tablename__: row
-        for row in (document, source, value_ref, contract, obj, work, task, note, confirmation, cost, scenario, param)
+        for row in (
+            document,
+            source,
+            value_ref,
+            contract,
+            obj,
+            work,
+            task,
+            note,
+            confirmation,
+            cost,
+            scenario,
+            param,
+        )
     }
     return company, rows
 
@@ -210,8 +248,17 @@ def test_M03_values_are_superseded_not_updated(sqlite_session):
         repo.update(old.id)
     with pytest.raises(ImmutableRecordError):
         repo.delete(old.id)
-    for table_name in ("contracts", "objects", "work_items", "schedule_tasks", "cost_entries", "scenarios"):
-        assert {"valid_from", "valid_to", "superseded_by", "replace_reason"} <= set(Base.metadata.tables[table_name].c)
+    for table_name in (
+        "contracts",
+        "objects",
+        "work_items",
+        "schedule_tasks",
+        "cost_entries",
+        "scenarios",
+    ):
+        assert {"valid_from", "valid_to", "superseded_by", "replace_reason"} <= set(
+            Base.metadata.tables[table_name].c
+        )
 
 
 def test_M04_no_rate_literals_outside_references():

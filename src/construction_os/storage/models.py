@@ -101,11 +101,19 @@ class ReferenceRateRow(Base):
 class ContractRow(Base):
     __tablename__ = "contracts"
     __table_args__ = (
-        Index("uq_contract_current", "company_id", "number", unique=True,
-              postgresql_where=column("valid_to").is_(None), sqlite_where=column("valid_to").is_(None)),
+        Index(
+            "uq_contract_current",
+            "company_id",
+            "number",
+            unique=True,
+            postgresql_where=column("valid_to").is_(None),
+            sqlite_where=column("valid_to").is_(None),
+        ),
     )
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     contract_type: Mapped[str] = mapped_column(Text, nullable=False)
     number: Mapped[str | None] = mapped_column(Text)
     signed_on: Mapped[date | None] = mapped_column(Date)
@@ -127,11 +135,19 @@ class ContractRow(Base):
 class ObjectRow(Base):
     __tablename__ = "objects"
     __table_args__ = (
-        Index("uq_object_current", "company_id", "name", unique=True,
-              postgresql_where=column("valid_to").is_(None), sqlite_where=column("valid_to").is_(None)),
+        Index(
+            "uq_object_current",
+            "company_id",
+            "name",
+            unique=True,
+            postgresql_where=column("valid_to").is_(None),
+            sqlite_where=column("valid_to").is_(None),
+        ),
     )
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     contract_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("contracts.id"))
     name: Mapped[str] = mapped_column(Text, nullable=False)
     object_type: Mapped[str | None] = mapped_column(Text)
@@ -179,11 +195,21 @@ class WorkItemRow(Base):
 class ScheduleTaskRow(Base):
     __tablename__ = "schedule_tasks"
     __table_args__ = (
-        Index("uq_schedule_task_current", "company_id", "object_id", "position_no", "front", unique=True,
-              postgresql_where=column("valid_to").is_(None), sqlite_where=column("valid_to").is_(None)),
+        Index(
+            "uq_schedule_task_current",
+            "company_id",
+            "object_id",
+            "position_no",
+            "front",
+            unique=True,
+            postgresql_where=column("valid_to").is_(None),
+            sqlite_where=column("valid_to").is_(None),
+        ),
     )
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     object_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("objects.id"), nullable=False)
     position_no: Mapped[int | None] = mapped_column(Integer)
     name: Mapped[str] = mapped_column(Text, nullable=False)
@@ -238,7 +264,11 @@ class ValueConfirmationRow(Base):
 
 class CostArticleRow(Base):
     __tablename__ = "cost_articles"
-    __table_args__ = (CheckConstraint("category IN ('direct','indirect','financial','other')", name="ck_cost_article_category"),)
+    __table_args__ = (
+        CheckConstraint(
+            "category IN ('direct','indirect','financial','other')", name="ck_cost_article_category"
+        ),
+    )
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     code: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     category: Mapped[str] = mapped_column(Text, nullable=False)
@@ -251,16 +281,25 @@ class CostArticleRow(Base):
 class CostEntryRow(Base):
     __tablename__ = "cost_entries"
     __table_args__ = (
-        CheckConstraint("amount_type IN ('fixed','share_of_revenue')", name="ck_cost_entry_amount_type"),
+        CheckConstraint(
+            "amount_type IN ('fixed','share_of_revenue')", name="ck_cost_entry_amount_type"
+        ),
         CheckConstraint("vat_mode IN ('gross','net','unknown')", name="ck_cost_entry_vat_mode"),
-        CheckConstraint("(amount_type = 'fixed' AND amount IS NOT NULL AND rate_value IS NULL) OR (amount_type = 'share_of_revenue' AND amount IS NULL AND rate_value IS NOT NULL)", name="ck_cost_entry_amount_shape"),
+        CheckConstraint(
+            "(amount_type = 'fixed' AND amount IS NOT NULL AND rate_value IS NULL) OR (amount_type = 'share_of_revenue' AND amount IS NULL AND rate_value IS NOT NULL)",
+            name="ck_cost_entry_amount_shape",
+        ),
     )
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     object_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("objects.id"), nullable=False)
     contract_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("contracts.id"))
     work_item_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("work_items.id"))
-    article_code: Mapped[str] = mapped_column(Text, ForeignKey("cost_articles.code"), nullable=False)
+    article_code: Mapped[str] = mapped_column(
+        Text, ForeignKey("cost_articles.code"), nullable=False
+    )
     quantity: Mapped[Decimal | None] = mapped_column(Numeric(18, 4))
     unit: Mapped[str | None] = mapped_column(Text)
     price: Mapped[Decimal | None] = mapped_column(Numeric(18, 4))
@@ -274,18 +313,29 @@ class CostEntryRow(Base):
     valid_to: Mapped[date | None] = mapped_column(Date)
     superseded_by: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("cost_entries.id"))
     replace_reason: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )
     created_by: Mapped[str] = mapped_column(Text, nullable=False)
 
 
 class ScenarioRow(Base):
     __tablename__ = "scenarios"
     __table_args__ = (
-        Index("uq_scenario_current", "company_id", "object_id", "name", unique=True,
-              postgresql_where=column("valid_to").is_(None), sqlite_where=column("valid_to").is_(None)),
+        Index(
+            "uq_scenario_current",
+            "company_id",
+            "object_id",
+            "name",
+            unique=True,
+            postgresql_where=column("valid_to").is_(None),
+            sqlite_where=column("valid_to").is_(None),
+        ),
     )
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     name: Mapped[str] = mapped_column(Text, nullable=False)
     object_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("objects.id"))
     contract_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("contracts.id"))
@@ -293,7 +343,9 @@ class ScenarioRow(Base):
     note: Mapped[str | None] = mapped_column(Text)
     source_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("value_sources.id"), nullable=False)
     created_by: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )
     valid_from: Mapped[date] = mapped_column(Date, nullable=False, default=date.today)
     valid_to: Mapped[date | None] = mapped_column(Date)
     superseded_by: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("scenarios.id"))
@@ -303,18 +355,27 @@ class ScenarioRow(Base):
 class ScenarioParamRow(Base):
     __tablename__ = "scenario_params"
     __table_args__ = (
-        CheckConstraint("param_type IN ('cost_multiplier','price_reduction','schedule_shift_days','winter_surcharge_pct','financial_share_override')", name="ck_scenario_param_type"),
+        CheckConstraint(
+            "param_type IN ('cost_multiplier','price_reduction','schedule_shift_days','winter_surcharge_pct','financial_share_override')",
+            name="ck_scenario_param_type",
+        ),
         CheckConstraint("scope IN ('all','category','cost_item')", name="ck_scenario_param_scope"),
         CheckConstraint("scope <> 'all' OR scope_value IS NULL", name="ck_scenario_scope_all"),
-        CheckConstraint("scope = 'all' OR scope_value IS NOT NULL", name="ck_scenario_scope_specific"),
+        CheckConstraint(
+            "scope = 'all' OR scope_value IS NOT NULL", name="ck_scenario_scope_specific"
+        ),
         CheckConstraint("param_value > 0", name="ck_scenario_param_positive"),
     )
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("companies.id"), nullable=False, index=True)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
     scenario_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("scenarios.id"), nullable=False)
     param_type: Mapped[str] = mapped_column(Text, nullable=False)
     scope: Mapped[str] = mapped_column(Text, nullable=False, default="all")
     scope_value: Mapped[str | None] = mapped_column(Text)
     param_value: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
     created_by: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )
