@@ -131,9 +131,11 @@ def sensitivity(
     rows.sort(key=lambda row: (-abs(row.delta), row.parameter))
     ranked = []
     rank = 0
+    previous_magnitude = None
     for row in rows:
-        if row.delta != 0:
+        if row.delta != 0 and abs(row.delta) != previous_magnitude:
             rank += 1
+            previous_magnitude = abs(row.delta)
         ranked.append(SensitivityRow(
             row.parameter, row.minus_profit, row.plus_profit, row.delta,
             rank if row.delta != 0 else None,

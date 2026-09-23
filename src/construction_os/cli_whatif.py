@@ -151,7 +151,10 @@ def run_whatif(args, session) -> int:
                 print(f"Финансовые фикс: {format_money_ru(base.costs.financial_fixed)}")
                 print(f"Финансовые доля: {base.costs.financial_share}")
         if args.sensitivity:
-            step = parse_multiplier(args.step)
+            try:
+                step = parse_multiplier(args.step)
+            except ValueError:
+                raise ValueError(f"invalid sensitivity step: {args.step}") from None
             if step <= 0:
                 raise ValueError(f"invalid sensitivity step: {args.step}")
             print(f"## Чувствительность ±{step}")

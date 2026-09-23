@@ -10,7 +10,6 @@ from sqlalchemy import or_, select
 
 from construction_os.money import money
 from construction_os.references import Confidence, SourceType
-from construction_os.references.cost_articles import DEFAULT_COST_ARTICLES
 from construction_os.storage.acts import find_company, find_contract
 from construction_os.storage.models import (
     AcceptanceActRow,
@@ -49,9 +48,7 @@ def validate_category(session, direction: str, category: str) -> None:
         active = session.scalar(select(CostArticleRow).where(
             CostArticleRow.code == category, CostArticleRow.is_active.is_(True)
         ))
-        if active is None and category not in {
-            code for code, _, _ in DEFAULT_COST_ARTICLES
-        } and category != "other_outflow":
+        if active is None and category != "other_outflow":
             raise CashFlowError(f"unknown outflow category: {category}")
     else:
         raise CashFlowError(f"unknown direction: {direction}")

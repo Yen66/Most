@@ -18,7 +18,7 @@ from construction_os.storage.cashflow import (
     manual_plan_override,
     missing_information,
 )
-from construction_os.storage.models import CashFlowRow
+from construction_os.storage.models import CashFlowRow, ContractRow, PaymentObligationRow
 
 
 def configure_cashflow(sub) -> None:
@@ -151,13 +151,8 @@ def run_cashflow(args, session) -> int:
             if row.source_kind != "payment_obligation":
                 continue
             # Current contract version controls withholding assumptions.
-            contract = session.get(
-                __import__(
-                    "construction_os.storage.models", fromlist=["ContractRow"]
-                ).ContractRow, row.contract_id
-            )
+            contract = session.get(ContractRow, row.contract_id)
             if contract is not None and contract.warranty_retention_pct:
-                from construction_os.storage.models import PaymentObligationRow
                 obligation = session.get(PaymentObligationRow, row.source_id)
                 if obligation is not None:
                     withheld = money(obligation.amount - row.amount)
