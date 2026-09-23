@@ -89,8 +89,8 @@ def traffic_light(profit_before_tax: Decimal | None, revenue_net: Decimal) -> st
 
 def vat_warnings(file_rates: set[Decimal], reference_rate: Decimal, on_date) -> tuple[str, ...]:
     return tuple(
-        f"в файле ставка {rate * D('100'):g}% — действующая ставка на {on_date}: "
-        f"{reference_rate * D('100'):g}% (425-ФЗ с 01.01.2026); "
+        f"в файле ставка {(rate * D('100')).normalize():f}% — действующая ставка на {on_date}: "
+        f"{(reference_rate * D('100')).normalize():f}% (425-ФЗ с 01.01.2026); "
         "файл создан до 2026 или ставка ошибочна"
         for rate in sorted(file_rates)
         if rate != reference_rate
