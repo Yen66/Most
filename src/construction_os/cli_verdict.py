@@ -68,10 +68,7 @@ def run_verdict(args, session) -> int:
         )
     print("Остальные отсутствующие статьи — нет данных: " + ", ".join(completeness.missing_other))
     if verdict.status is None:
-        print(
-            "вердикт неполный: нет данных по затратам — "
-            "заполните costs template и costs import"
-        )
+        print("вердикт неполный: нет данных по затратам — заполните costs template и costs import")
     else:
         profit = report.profit
         print(

@@ -2,11 +2,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from decimal import Decimal
 
 from sqlalchemy import select
 
-from construction_os.calc.verdict import BidRow, Completeness, bid_grid, cost_completeness, traffic_light, vat_warnings
+from construction_os.calc.verdict import (
+    BidRow,
+    Completeness,
+    bid_grid,
+    cost_completeness,
+    traffic_light,
+    vat_warnings,
+)
 from construction_os.references import RateType, get_rate
 from construction_os.storage.economics import EconomicsReport, load_economics_report
 
@@ -60,11 +66,13 @@ def load_verdict(session, company_name: str, object_name: str, on_date: date) ->
     lineage = object_lineage_ids(session, report.object_row)
     works = list(
         session.scalars(
-            select(WorkItemRow).where(
+            select(WorkItemRow)
+            .where(
                 WorkItemRow.company_id == report.company.id,
                 WorkItemRow.object_id.in_(lineage),
                 WorkItemRow.valid_to.is_(None),
-            ).order_by(WorkItemRow.position_no)
+            )
+            .order_by(WorkItemRow.position_no)
         )
     )
     contract = resolve_contract(session, report.company.id, report.object_row)
@@ -104,6 +112,8 @@ def load_verdict(session, company_name: str, object_name: str, on_date: date) ->
         bids,
         completeness,
         {article.code: article.name for article in catalog},
-        vat_warnings({work.vat_rate for work in works}, get_rate(RateType.VAT_RATE, on_date).value, on_date),
+        vat_warnings(
+            {work.vat_rate for work in works}, get_rate(RateType.VAT_RATE, on_date).value, on_date
+        ),
         status,
     )

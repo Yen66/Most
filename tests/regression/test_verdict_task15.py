@@ -149,11 +149,11 @@ def test_bid_grid_zero_matches_historical_revenue(fixtures_dir):
 def test_bid_grid_monotonic(fixtures_dir):
     parsed = parse_vor(fixtures_dir / "vor_object_a.xlsx")
     rows = bid_grid([item.amount_gross for item in parsed.items], D("0.22"))
-    assert all(a.net > b.net for a, b in zip(rows, rows[1:]))
+    assert all(a.net > b.net for a, b in zip(rows, rows[1:], strict=False))
 
 
 def test_bid_grid_fixed_reductions():
-    assert BID_REDUCTIONS == tuple(map(D, ("0", "0.05", "0.08", "0.10", "0.15", "0.20", "0.22")))
+    assert tuple(map(D, ("0", "0.05", "0.08", "0.10", "0.15", "0.20", "0.22"))) == BID_REDUCTIONS
 
 
 def test_bid_grid_award_factor_e_v5():
