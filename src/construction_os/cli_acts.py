@@ -90,6 +90,8 @@ def run_acts(args, session) -> int:
         if args.acts_command == "pay":
             contract = find_contract(session, company.id, args.contract_number)
             act = find_act(session, company.id, args.act_number, contract.id)
+            if act.via_eis is None:
+                print("ПРЕДУПРЕЖДЕНИЕ: via_eis: нет данных — принято ЕИС-актирование")
             obligation = current_obligation(session, company.id, act.id)
             if obligation is None:
                 raise LookupError("нет данных: обязательство оплаты")
@@ -124,12 +126,27 @@ def run_acts(args, session) -> int:
         for act in session.scalars(query.order_by(AcceptanceActRow.act_number)):
             cal = DbCalendar(session)
             deadline = signing_deadline(act.placed_on, cal.is_working)
-            delta = (deadline - args.as_of).days
-            status = (
-                f"осталось {delta} календ. дн."
-                if delta >= 0
-                else f"просрочено {-delta} календ. дн."
-            )
+            if act.status == "signed":
+                delta = (deadline - act.signed_on).days
+                status = (
+                    "подписан в срок"
+                    if delta >= 0
+                    else f"подписан с просрочкой {-delta} календ. дн."
+                )
+            elif act.status == "refused":
+                delta = (deadline - act.refusal_on).days
+                status = (
+                    "отказ в срок"
+                    if delta >= 0
+                    else f"отказ с просрочкой {-delta} календ. дн."
+                )
+            else:
+                delta = (deadline - args.as_of).days
+                status = (
+                    f"осталось {delta} календ. дн."
+                    if delta >= 0
+                    else f"просрочено {-delta} календ. дн."
+                )
             print(
                 f"Акт {act.act_number}: {act.status}; сумма {money(act.amount_gross)}; "
                 f"срок подписания {deadline} ({status}); "
@@ -144,14 +161,15 @@ def run_acts(args, session) -> int:
                     AcceptanceActRow.valid_to.is_not(None),
                 )
             )
-            if previous_refusal is not None and act.status == "placed":
+            if previous_refusal is not None:
                 print(f"срок сброшен: новый акт от {act.placed_on}")
             obligation = current_obligation(session, company.id, act.id)
             if obligation is None:
                 print("Оплата: обязательство не возникло")
                 continue
             paid = obligation.paid_amount or Decimal("0")
-            contract = session.get(ContractRow, act.contract_id)
+            historical_contract = session.get(ContractRow, act.contract_id)
+            contract = find_contract(session, company.id, historical_contract.number)
             penalty = calculate_penalty(
                 obligation.amount,
                 obligation.due_on,
@@ -161,6 +179,8 @@ def run_acts(args, session) -> int:
                 penalty_cap_pct=contract.penalty_cap_pct,
             )
             print(f"Пеня: {money(penalty.total)}")
+            for warning in penalty.warnings:
+                print(f"ПРЕДУПРЕЖДЕНИЕ: {warning}")
             print(
                 f"Оплата: due_on={obligation.due_on}; basis={obligation.term_basis}; "
                 f"оплачено={money(paid)}; осталось={money(obligation.amount - paid)}; "
