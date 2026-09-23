@@ -73,7 +73,7 @@ def test_no_fake_rate_tables():
 
 
 def test_repository_counts():
-    assert len(TENANT_REPOSITORIES) == 12 and len(ALL_REPOSITORIES) == 15
+    assert len(TENANT_REPOSITORIES) == 14 and len(ALL_REPOSITORIES) == 18
 
 
 def test_cost_article_repository_global():

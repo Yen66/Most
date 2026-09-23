@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from construction_os.cli_acts import configure_acts, run_acts
 from construction_os.cli_calendar import configure_calendar, run_calendar
+from construction_os.cli_penalty import configure_penalty, run_penalty
 from construction_os.calc import (
     CostArticle,
     CostEntry,
@@ -89,6 +90,7 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--schedule-shift-days", type=_decimal_arg)
     configure_calendar(sub)
     configure_acts(sub)
+    configure_penalty(sub)
     return parser
 
 
@@ -192,6 +194,8 @@ def main(argv=None) -> int:
         return 0
     engine = make_engine()
     with Session(engine) as session:
+        if args.command == "penalty":
+            return run_penalty(args, session)
         if args.command == "acts":
             return run_acts(args, session)
         if args.command == "calendar":

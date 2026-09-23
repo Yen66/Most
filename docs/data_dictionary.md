@@ -22,3 +22,19 @@ Tenant-таблица затрат: связи с объектом/догово�
 
 ## scenario_params
 Immutable-дочерняя таблица без полей версии: `param_type`, `scope`, `scope_value`, `param_value`, автор и время. CHECK контролируют тип параметра, scope, согласованность scope_value и положительное значение.
+
+## Таблицы задач 10–12
+
+- `work_calendar`: глобальная, 730 дат 2026–2027, `cal_date` UNIQUE,
+  `is_working`, `day_type`, `is_shortened`, `source`. Неизменяемые строки.
+- `acceptance_acts`: tenant; `contract_id` указывает на версию договора,
+  `act_number`, `amount_gross NUMERIC(18,2)`, `placed_on`,
+  `signed_on`, `refusal_on`, `refusal_reason`, `via_eis`,
+  `status`, `valid_from/to`, `superseded_by`, `replace_reason`.
+  Один активный номер в пределах версии договора.
+- `payment_obligations`: tenant; `act_id` указывает на версию акта,
+  `amount NUMERIC(18,2)`, `due_on`, `term_workdays`, `term_basis`,
+  `paid_on`, `paid_amount` и четыре поля версионирования.
+- `contracts.penalty_cap_pct NUMERIC(9,6)`: nullable; NULL — без договорного
+  потолка, явное предупреждение. Значение берётся из активной версии договора.
+- `penalty_accruals` отсутствует: пени вычисляются при формировании отчёта.

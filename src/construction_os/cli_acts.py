@@ -6,6 +6,7 @@ from decimal import Decimal
 from sqlalchemy import select
 
 from construction_os.calc.acts import signing_deadline
+from construction_os.calc.penalty import calculate_penalty
 from construction_os.domain.calendar import CalendarNotCoveredError
 from construction_os.money.core import money
 from construction_os.storage.acts import (
@@ -18,7 +19,7 @@ from construction_os.storage.acts import (
     register_payment,
 )
 from construction_os.storage.calendar import DbCalendar
-from construction_os.storage.models import AcceptanceActRow
+from construction_os.storage.models import AcceptanceActRow, ContractRow
 
 
 def configure_acts(sub) -> None:
@@ -149,6 +150,14 @@ def run_acts(args, session) -> int:
                 print("Оплата: обязательство не возникло")
                 continue
             paid = obligation.paid_amount or Decimal("0")
+            contract = session.get(ContractRow, act.contract_id)
+            penalty = calculate_penalty(
+                obligation.amount, obligation.due_on,
+                as_of=args.as_of, paid_on=obligation.paid_on,
+                paid_amount=obligation.paid_amount,
+                penalty_cap_pct=contract.penalty_cap_pct,
+            )
+            print(f"Пеня: {money(penalty.total)}")
             print(
                 f"Оплата: due_on={obligation.due_on}; basis={obligation.term_basis}; "
                 f"оплачено={money(paid)}; осталось={money(obligation.amount - paid)}; "

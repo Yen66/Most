@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import pytest
 
+from construction_os.storage.repositories import EXCLUDED_TABLES
 from construction_os.storage.models import Base, CompanyRow, ObjectRow, ValueSourceRow
 from construction_os.storage.repositories import ImmutableRecordError, WorkItemRepository
 
@@ -19,7 +20,7 @@ def seed(s, name):
 
 
 def test_company_id_on_tenant_tables():
-    excluded = {"companies", "reference_rates", "cost_articles"}
+    excluded = EXCLUDED_TABLES
     assert all("company_id" in t.c for n, t in Base.metadata.tables.items() if n not in excluded)
 
 
