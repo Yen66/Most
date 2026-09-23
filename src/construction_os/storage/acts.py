@@ -148,20 +148,20 @@ def create_act(
     repo = AcceptanceActRepository(session)
     active = repo.list_current(company_id, contract_id=contract.id, act_number=act_number)
     source = _source(session, company_id, SourceType.USER_INPUT, actor)
-    values = dict(
-        contract_id=contract.id,
-        object_id=object_id,
-        act_number=act_number,
-        amount_gross=money(amount_gross),
-        placed_on=placed_on,
-        signed_on=signed_on,
-        refusal_on=refusal_on,
-        refusal_reason=refusal_reason,
-        via_eis=via_eis,
-        period_from=period_from,
-        period_to=period_to,
-        status=status,
-    )
+    values = {
+        "contract_id": contract.id,
+        "object_id": object_id,
+        "act_number": act_number,
+        "amount_gross": money(amount_gross),
+        "placed_on": placed_on,
+        "signed_on": signed_on,
+        "refusal_on": refusal_on,
+        "refusal_reason": refusal_reason,
+        "via_eis": via_eis,
+        "period_from": period_from,
+        "period_to": period_to,
+        "status": status,
+    }
     if active:
         old = active[0]
         if old.status != "refused" or status != "placed":

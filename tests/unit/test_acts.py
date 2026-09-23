@@ -301,15 +301,15 @@ def test_tenant_isolation_new_repositories(context):
 )
 def test_named_act_checks_raw(context, kind, expected):
     session, company, _, contract = context
-    values = dict(
-        company_id=company.id,
-        contract_id=contract.id,
-        act_number="RAW",
-        amount_gross=M("100"),
-        placed_on=D("2026-09-01"),
-        status="placed",
-        valid_from=D("2026-09-01"),
-    )
+    values = {
+        "company_id": company.id,
+        "contract_id": contract.id,
+        "act_number": "RAW",
+        "amount_gross": M("100"),
+        "placed_on": D("2026-09-01"),
+        "status": "placed",
+        "valid_from": D("2026-09-01"),
+    }
     if kind == "placed":
         values["placed_on"] = None
     elif kind == "signed":
@@ -345,15 +345,15 @@ def test_named_payment_checks_raw(context, kind, expected):
         M("100"),
         D("2026-09-01"),
     )
-    values = dict(
-        company_id=company.id,
-        act_id=act.id,
-        amount=M("100"),
-        due_on=D("2026-10-08"),
-        term_workdays=7,
-        term_basis="law_eis_7",
-        valid_from=D("2026-09-29"),
-    )
+    values = {
+        "company_id": company.id,
+        "act_id": act.id,
+        "amount": M("100"),
+        "due_on": D("2026-10-08"),
+        "term_workdays": 7,
+        "term_basis": "law_eis_7",
+        "valid_from": D("2026-09-29"),
+    }
     if kind == "pair":
         values["paid_amount"] = M("10")
     elif kind == "range":

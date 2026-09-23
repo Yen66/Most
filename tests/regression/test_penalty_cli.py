@@ -31,7 +31,7 @@ def test_penalty_cli_partial_payment_and_report(tmp_path, monkeypatch, capsys):
             price_is_final=True,
             valid_from=date(2026, 8, 1),
         )
-        act, obligation, _ = create_act(
+        _act, obligation, _ = create_act(
             session,
             company.id,
             contract,
