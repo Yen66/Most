@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+from itertools import pairwise
 from types import SimpleNamespace
 
 import pytest
@@ -56,7 +57,8 @@ def vor_a(session, fixtures_dir, company="A"):
     session.flush()
 
 
-def demo(session, factor=None, vat=D("0.22")):
+def demo(session, factor=None, vat=None):
+    vat = vat if vat is not None else D("0.22")
     catalog(session)
     company = CompanyRow(name="Demo Co")
     session.add(company)
@@ -149,7 +151,7 @@ def test_bid_grid_zero_matches_historical_revenue(fixtures_dir):
 def test_bid_grid_monotonic(fixtures_dir):
     parsed = parse_vor(fixtures_dir / "vor_object_a.xlsx")
     rows = bid_grid([item.amount_gross for item in parsed.items], D("0.22"))
-    assert all(a.net > b.net for a, b in zip(rows, rows[1:], strict=False))
+    assert all(a.net > b.net for a, b in pairwise(rows))
 
 
 def test_bid_grid_fixed_reductions():
