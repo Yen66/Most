@@ -23,6 +23,7 @@ from construction_os.calc import (
 from construction_os.cli_acts import configure_acts, run_acts
 from construction_os.cli_calendar import configure_calendar, run_calendar
 from construction_os.cli_cashflow import configure_cashflow, run_cashflow
+from construction_os.cli_intake import configure_intake, run_intake
 from construction_os.cli_penalty import configure_penalty, run_penalty
 from construction_os.cli_whatif import configure_whatif, run_whatif
 from construction_os.importers import (
@@ -95,6 +96,7 @@ def _parser() -> argparse.ArgumentParser:
     configure_penalty(sub)
     configure_whatif(sub)
     configure_cashflow(sub)
+    configure_intake(sub)
     return parser
 
 
@@ -208,6 +210,8 @@ def main(argv=None) -> int:
             return run_whatif(args, session)
         if args.command == "cash-flow":
             return run_cashflow(args, session)
+        if args.command == "intake":
+            return run_intake(args, session)
         if args.command == "import":
             result = (
                 persist_vor(session, args.company, parse_vor(args.path), args.path)
