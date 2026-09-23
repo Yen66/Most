@@ -37,11 +37,11 @@ jobs:
           find src tests scripts -name '*.py' | xargs wc -l | tail -1
           python - <<'PY'
           from construction_os.storage.models import Base
-          from construction_os.storage.repositories import ALL_REPOSITORIES, TENANT_REPOSITORIES
+          from construction_os.storage.repositories import ALL_REPOSITORIES, TENANT_REPOSITORIES, EXCLUDED_TABLES
           print("tables", len(Base.metadata.tables))
           print("tenant_repositories", len(TENANT_REPOSITORIES))
           print("all_repositories", len(ALL_REPOSITORIES))
-          print("excluded_tables", 3)
+          print("excluded_tables", len(EXCLUDED_TABLES))
           PY
       - name: Repository hygiene
         run: |

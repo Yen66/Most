@@ -379,3 +379,22 @@ class ScenarioParamRow(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, nullable=False
     )
+
+
+class WorkCalendarRow(Base):
+    __tablename__ = "work_calendar"
+    __table_args__ = (
+        CheckConstraint(
+            "day_type IN ('working','weekend','holiday','transferred_day_off','transferred_working')",
+            name="ck_work_calendar_day_type",
+        ),
+        CheckConstraint(
+            "NOT is_shortened OR is_working", name="ck_work_calendar_shortened_working"
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    cal_date: Mapped[date] = mapped_column(Date, nullable=False, unique=True)
+    is_working: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    day_type: Mapped[str] = mapped_column(Text, nullable=False)
+    is_shortened: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    source: Mapped[str] = mapped_column(Text, nullable=False)

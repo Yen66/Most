@@ -23,6 +23,7 @@ from .models import (
     ValueRefRow,
     ValueSourceRow,
     WorkItemRow,
+    WorkCalendarRow,
 )
 
 
@@ -278,6 +279,21 @@ class ScenarioParamRepository(BaseRepository):
     model = ScenarioParamRow
 
 
+class WorkCalendarRepository(BaseRepository):
+    model = WorkCalendarRow
+    tenant_scoped = False
+
+    def get_by_date(self, day: date):
+        return self.session.scalar(
+            select(WorkCalendarRow).where(WorkCalendarRow.cal_date == day)
+        )
+
+
+EXCLUDED_TABLES = frozenset(
+    {"companies", "reference_rates", "cost_articles", "work_calendar"}
+)
+
+
 TENANT_REPOSITORIES = (
     DocumentRepository,
     ValueSourceRepository,
@@ -296,5 +312,6 @@ ALL_REPOSITORIES = (
     CompanyRepository,
     ReferenceRateRepository,
     CostArticleRepository,
+    WorkCalendarRepository,
     *TENANT_REPOSITORIES,
 )

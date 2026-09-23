@@ -2,6 +2,8 @@ from .db import make_engine
 from .models import Base
 from .repositories import (
     ALL_REPOSITORIES,
+    EXCLUDED_TABLES,
+    WorkCalendarRepository,
     TENANT_REPOSITORIES,
     ContractRepository,
     CostArticleRepository,
@@ -18,6 +20,8 @@ from .repositories import (
 
 __all__ = [
     "ALL_REPOSITORIES",
+    "EXCLUDED_TABLES",
+    "WorkCalendarRepository",
     "TENANT_REPOSITORIES",
     "Base",
     "ContractRepository",
