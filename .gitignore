@@ -1,0 +1,15 @@
+data_raw/*
+.env
+__pycache__/
+.venv/
+*.xlsx
+*.xls
+*.pdf
+*.docx
+.pytest_cache/
+.ruff_cache/
+*.db
+*.sqlite3
+backups/
+tests/fixtures/generated/
+*.egg-info/

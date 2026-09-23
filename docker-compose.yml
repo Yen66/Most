@@ -1,0 +1,8 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: construction_os
+      POSTGRES_USER: construction_os
+      POSTGRES_PASSWORD: construction_os
+    ports: ["5432:5432"]

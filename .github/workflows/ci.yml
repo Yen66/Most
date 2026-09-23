@@ -1,0 +1,86 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main, feat/foundation]
+
+jobs:
+  sqlite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e '.[dev]'
+      - name: Generate and verify fixtures
+        run: python scripts/make_fixtures.py --out tests/fixtures/generated
+      - run: ruff format --check .
+      - run: ruff check .
+      - name: SQLite tests
+        run: pytest -q
+      - name: Acceptance test
+        run: pytest -q tests/regression/test_acceptance_end_to_end.py -vv
+      - name: Migration cycle
+        run: alembic upgrade head && alembic downgrade base && alembic upgrade head
+      - name: Economics references and CLI demo
+        run: |
+          python scripts/make_reference_values.py
+          python scripts/make_cost_template.py --out /tmp/direct-costs.xlsx
+          construction-os costs template --out /tmp/costs.xlsx
+          DATABASE_URL=sqlite:///construction_os.db python scripts/seed_economics_demo.py /tmp/costs.xlsx
+          DATABASE_URL=sqlite:///construction_os.db construction-os costs import /tmp/costs.xlsx --company "Demo Co"
+          DATABASE_URL=sqlite:///construction_os.db construction-os cost-report --company "Demo Co" --object "Demo Object" --date 2026-09-20
+          DATABASE_URL=sqlite:///construction_os.db construction-os breakeven --company "Demo Co" --object "Demo Object" --date 2026-09-20
+          DATABASE_URL=sqlite:///construction_os.db construction-os scenario --company "Demo Co" --object "Demo Object" --date 2026-09-20 --name "MAT +10" --cost-multiplier 1.10 --scope cost_item --scope-value MAT
+          DATABASE_URL=sqlite:///construction_os.db python scripts/seed_acts_demo.py
+          DATABASE_URL=sqlite:///construction_os.db construction-os acts add --company "Demo Co" --contract-number "ДЕМО-АКТ-2026" --act-number "ДЕМО-4" --amount-gross 1000 --placed-on 2026-09-01 --signed-on 2026-09-29 --via-eis
+          DATABASE_URL=sqlite:///construction_os.db construction-os acts pay --company "Demo Co" --contract-number "ДЕМО-АКТ-2026" --act-number "ДЕМО-4" --paid-on 2026-10-08 --amount 1000
+          DATABASE_URL=sqlite:///construction_os.db construction-os acts report --company "Demo Co" --as-of 2026-10-28
+          DATABASE_URL=sqlite:///construction_os.db construction-os penalty --company "Demo Co" --contract-number "ДЕМО-АКТ-2026" --act-number "ДЕМО-2" --as-of 2026-10-28
+          pytest --collect-only -q | tail -1
+          find src tests scripts -name '*.py' | xargs wc -l | tail -1
+          python - <<'PY'
+          from construction_os.storage.models import Base
+          from construction_os.storage.repositories import ALL_REPOSITORIES, TENANT_REPOSITORIES, EXCLUDED_TABLES
+          print("tables", len(Base.metadata.tables))
+          print("tenant_repositories", len(TENANT_REPOSITORIES))
+          print("all_repositories", len(ALL_REPOSITORIES))
+          print("excluded_tables", len(EXCLUDED_TABLES))
+          PY
+      - name: Repository hygiene
+        run: |
+          set -o pipefail
+          FOUND="$(git log --all --pretty=format: --name-only --diff-filter=A | sort -u | grep -Ei '\.(xlsx|xls|pdf|docx|env)$|data_raw/' || true)"
+          printf '%s\n' "$FOUND"
+          test -z "$FOUND"
+      - name: No tracked binary fixtures
+        run: git ls-files | grep -Ei '\.(xlsx|xls|pdf|docx|png|jpg|zip)$' && exit 1 || true
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: construction_os
+          POSTGRES_USER: construction_os
+          POSTGRES_PASSWORD: construction_os
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U construction_os -d construction_os"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      DATABASE_URL: postgresql+psycopg://construction_os:construction_os@localhost:5432/construction_os
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e '.[dev]'
+      - name: Generate and verify fixtures
+        run: python scripts/make_fixtures.py --out tests/fixtures/generated
+      - name: PostgreSQL migration cycle
+        run: alembic upgrade head && alembic downgrade base && alembic upgrade head
+      - name: PostgreSQL tests
+        run: pytest -q
