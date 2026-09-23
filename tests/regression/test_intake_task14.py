@@ -34,7 +34,7 @@ def test_batch_four_reference_values(sqlite_session, fixtures_dir):
         "portfolio_gross": "198690812.22",
         "portfolio_net": "162861321.49",
     }
-    assert [row["positions"] for row in receipt["files"]][0] == 29
+    assert next(row["positions"] for row in receipt["files"]) == 29
 
 
 def test_duplicate_batch_does_not_create_rows(sqlite_session, fixtures_dir):
@@ -110,7 +110,7 @@ def test_json_receipt_matches_stdout(sqlite_session, fixtures_dir, tmp_path, cap
     assert run_intake(args, sqlite_session) == 0
     receipt = json.loads(path.read_text(encoding="utf-8"))
     stdout = capsys.readouterr().out
-    assert f'imported: {receipt["summary"]["imported"]}' in stdout
+    assert f"imported: {receipt['summary']['imported']}" in stdout
     assert receipt["summary"]["portfolio_gross"] in stdout
 
 
