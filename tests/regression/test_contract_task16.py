@@ -191,22 +191,22 @@ def test_immutable_repository(sqlite_session):
 
 def test_cli_set_show_roundtrip(sqlite_session, capsys):
     company(sqlite_session)
-    data = dict(
-        company="A",
-        number="N",
-        signed_on=DAY,
-        contract_type="government",
-        advance_pct=D("20"),
-        payment_delay_days=15,
-        security_amount=D("1000"),
-        warranty_retention_pct=D("5"),
-        treasury_account=True,
-        award_reduction_factor=D("0.87"),
-        price_is_final=True,
-        penalty_cap_pct=D("10"),
-        actor="owner",
-        reason="first",
-    )
+    data = {
+        "company": "A",
+        "number": "N",
+        "signed_on": DAY,
+        "contract_type": "government",
+        "advance_pct": D("20"),
+        "payment_delay_days": 15,
+        "security_amount": D("1000"),
+        "warranty_retention_pct": D("5"),
+        "treasury_account": True,
+        "award_reduction_factor": D("0.87"),
+        "price_is_final": True,
+        "penalty_cap_pct": D("10"),
+        "actor": "owner",
+        "reason": "first",
+    }
     assert run_contract(SimpleNamespace(contract_command="set", **data), sqlite_session) == 0
     out = capsys.readouterr().out
     assert "ПРЕДУПРЕЖДЕНИЕ" in out
