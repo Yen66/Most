@@ -88,7 +88,14 @@ def test_structure_not_filename(sqlite_session, fixtures_dir, tmp_path):
 
 def test_shifted_header(sqlite_session, tmp_path):
     subprocess.run(
-        [sys.executable, "scripts/make_fixtures.py", "--out", str(tmp_path), "--shift-header", "2"],
+        [
+            sys.executable,
+            "scripts/make_fixtures.py",
+            "--out",
+            str(tmp_path),
+            "--shift-header",
+            "2",
+        ],
         check=True,
     )
     shifted = tmp_path / "vor_object_a_shifted_2.xlsx"
