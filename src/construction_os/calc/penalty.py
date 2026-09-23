@@ -162,6 +162,23 @@ def calculate_penalty(
     if penalty_cap_pct is not None and penalty_cap_pct < 0:
         raise ValueError("penalty_cap_pct cannot be negative")
     raw_segments = penalty_segments(amount, due_on, paid_on, paid_amount, as_of)
+    if not raw_segments:
+        # No rate is applicable when the obligation has no overdue days.
+        cap = money(amount * penalty_cap_pct) if penalty_cap_pct is not None else None
+        return PenaltyResult(
+            (),
+            Decimal("0.00"),
+            Decimal("0.00"),
+            Decimal("0"),
+            rate_date or as_of,
+            None,
+            False,
+            cap,
+            None,
+            (NO_CAP_WARNING,) if cap is None else (),
+            (),
+            0,
+        )
     final_rate_date = rate_date or (raw_segments[-1].end if raw_segments else as_of)
     selected = get_rate(RateType.KEY_RATE, final_rate_date)
     segments = []

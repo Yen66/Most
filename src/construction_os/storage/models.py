@@ -509,3 +509,46 @@ class PaymentObligationRow(Base):
     valid_to: Mapped[date | None] = mapped_column(Date)
     superseded_by: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("payment_obligations.id"))
     replace_reason: Mapped[str | None] = mapped_column(Text)
+
+
+class CashFlowRow(Base):
+    """Versioned signed-direction flow; the monetary amount is always positive."""
+
+    __tablename__ = "cash_flows"
+    __table_args__ = (
+        CheckConstraint("direction IN ('inflow','outflow')", name="ck_cash_flow_direction"),
+        CheckConstraint("amount > 0", name="ck_cash_flow_amount_positive"),
+        CheckConstraint("plan_or_fact IN ('plan','fact')", name="ck_cash_flow_plan_fact"),
+        CheckConstraint(
+            "(source_kind IS NULL AND source_id IS NULL) OR "
+            "(source_kind IS NOT NULL AND source_id IS NOT NULL)",
+            name="ck_cash_flow_source_pair",
+        ),
+        Index(
+            "uq_cash_flow_source_current",
+            "company_id",
+            "source_kind",
+            "source_id",
+            unique=True,
+            postgresql_where=column("valid_to").is_(None) & column("source_kind").is_not(None),
+            sqlite_where=column("valid_to").is_(None) & column("source_kind").is_not(None),
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
+    contract_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("contracts.id"))
+    object_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("objects.id"))
+    flow_date: Mapped[date] = mapped_column(Date, nullable=False)
+    direction: Mapped[str] = mapped_column(Text, nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    category: Mapped[str] = mapped_column(Text, nullable=False)
+    plan_or_fact: Mapped[str] = mapped_column(Text, nullable=False)
+    source_kind: Mapped[str | None] = mapped_column(Text)
+    source_id: Mapped[UUID | None] = mapped_column(Uuid)
+    note: Mapped[str | None] = mapped_column(Text)
+    valid_from: Mapped[date] = mapped_column(Date, nullable=False)
+    valid_to: Mapped[date | None] = mapped_column(Date)
+    superseded_by: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("cash_flows.id"))
+    replace_reason: Mapped[str | None] = mapped_column(Text)

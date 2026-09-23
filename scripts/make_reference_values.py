@@ -230,6 +230,153 @@ def render_new_sections():
         f"| P8 | повторно размещён 2026-09-25; новый срок "
         f"{signing_deadline(date(2026, 9, 25), working)} | — |",
     ]
+    return "\n".join(lines) + "\n" + render_task13_sections()
+
+
+def render_task13_sections():
+    """CF1-CF5 and S1-S13/F6: derive every result from production modules."""
+    from construction_os.calc.cashflow import Flow, daily_balances, financing_cost, gap_report
+    from construction_os.calc.costs import CostArticle, CostEntry
+    from construction_os.calc.scenarios import ScenarioParam
+    from construction_os.calc.whatif import evaluate, goal_seek, sensitivity
+    from construction_os.references.cost_articles import DEFAULT_COST_ARTICLES
+
+    T = date.fromisoformat
+    base_flows = [
+        Flow(T("2026-09-15"), "outflow", D("600000"), "MAT"),
+        Flow(T("2026-09-30"), "outflow", D("200000"), "LAB"),
+        Flow(T("2026-10-08"), "inflow", D("1000000"), "act_payment"),
+    ]
+    cash_cases = (
+        ("CF1", base_flows, T("2026-09-15"), T("2026-10-31")),
+        (
+            "CF2",
+            [Flow(T("2026-09-01"), "inflow", D("300000"), "advance"), *base_flows],
+            T("2026-09-01"),
+            T("2026-10-31"),
+        ),
+        (
+            "CF3",
+            [
+                Flow(T("2026-09-20"), "outflow", D("960000"), "SUB"),
+                Flow(T("2026-10-08"), "inflow", D("950000"), "act_payment"),
+            ],
+            T("2026-09-20"),
+            T("2026-10-31"),
+        ),
+        (
+            "CF4",
+            [
+                Flow(T("2026-10-01"), "outflow", D("800000"), "MAT"),
+                Flow(T("2026-10-20"), "inflow", D("1000000"), "act_payment", "fact"),
+            ],
+            T("2026-10-01"),
+            T("2026-10-31"),
+        ),
+        (
+            "CF5",
+            [
+                Flow(T("2026-09-01"), "inflow", D("500000"), "advance"),
+                Flow(T("2026-09-20"), "outflow", D("400000"), "MAT"),
+            ],
+            T("2026-09-01"),
+            T("2026-09-30"),
+        ),
+    )
+    lines = [
+        "",
+        "## Cash-flow",
+        "",
+        "| Кейс | Дней в минусе | Максимум | Первая дата максимума | "
+        "Первый минус | Выход | Финансирование | Баланс |",
+        "|---|---:|---:|---|---|---|---:|---:|",
+    ]
+    for name, flows, start, end in cash_cases:
+        balances = daily_balances(flows, start, end)
+        gap = gap_report(balances)
+        cost = financing_cost(balances, D("0.14"))
+        lines.append(
+            f"| {name} | {gap.deficit_days} | {m(gap.max_deficit)} | "
+            f"{gap.max_deficit_date or 'нет'} | {gap.first_negative_date or 'нет'} | "
+            f"{gap.recovered_date or 'нет'} | {m(cost)} | {m(balances[-1].balance)} |"
+        )
+    lines += [
+        "",
+        "CF3: удержание " + m(D("1000000") - D("950000")) + " — дата возврата неизвестна.",
+        "",
+        "## What-if",
+        "",
+        "| Кейс | Выручка | Производственные | Прибыль | Налог | Чистая | Маржа |",
+        "|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    articles = {
+        code: CostArticle(code, cat, name, i)
+        for i, (code, cat, name) in enumerate(DEFAULT_COST_ARTICLES, 1)
+    }
+    entries = [
+        CostEntry(code, D(amount), vat_mode="net")
+        for code, amount in (
+            ("MAT", "500000"),
+            ("LAB", "250000"),
+            ("MACH_OWN", "70000"),
+            ("OVR_SITE", "50000"),
+            ("BANK_GUAR", "27000"),
+        )
+    ]
+    P = ScenarioParam
+    cases = (
+        ("S1", []),
+        ("S2", [P("cost_multiplier", D("1.10"), "cost_item", "MAT")]),
+        ("S3", [P("price_reduction", D("0.08"))]),
+        ("S4", [P("price_reduction", D("0.08")), P("cost_multiplier", D("1.10"))]),
+        ("S5", [P("cost_multiplier", D("1.10"))]),
+        (
+            "S6",
+            [P("price_reduction", D("0.08")), P("cost_multiplier", D("1.10"), "cost_item", "MAT")],
+        ),
+        ("S7", [P("financial_share_override", D("0.027"))]),
+        ("S8", [P("cost_multiplier", D("1.10"), "category", "direct")]),
+        ("S9", [P("cost_multiplier", D("1.05"), "cost_item", "MAT")]),
+    )
+    tax = get_rate(RateType.PROFIT_TAX, ON_DATE).value
+    for name, params in cases:
+        result = evaluate(entries, articles, D("1000000"), tax, params, D("0.22"))
+        profit = result.profit
+        lines.append(
+            f"| {name} | {m(profit.revenue_net)} | {m(profit.costs_production)} | "
+            f"{m(profit.profit_before_tax)} | {m(profit.income_tax)} | "
+            f"{m(profit.net_profit)} | {p(profit.margin_pct)} |"
+        )
+    lines += [
+        "",
+        "## Goal-seek",
+        "",
+        "| Кейс | Цель | Прибыль-цель | m* | Проверочная прибыль | Остаток |",
+        "|---|---|---:|---:|---:|---:|",
+    ]
+    for name, target, profit in (
+        ("S10", "item:MAT", D("0")),
+        ("S11", "price", D("0")),
+        ("S12", "all", D("0")),
+        ("S13", "item:MAT", D("50000")),
+    ):
+        result = goal_seek(entries, articles, D("1000000"), tax, target, profit, vat_rate=D("0.22"))
+        lines.append(
+            f"| {name} | {target} | {m(profit)} | {result.multiplier:.6f} | "
+            f"{m(result.checked_profit)} | {m(result.residual)} |"
+        )
+    lines += [
+        "",
+        "## Sensitivity",
+        "",
+        "| Параметр | Прибыль −step | Прибыль +step | Δ | Ранг |",
+        "|---|---:|---:|---:|---:|",
+    ]
+    for row in sensitivity(entries, articles, D("1000000"), tax, D("0.10"), D("0.22")):
+        lines.append(
+            f"| {row.parameter} | {m(row.minus_profit)} | {m(row.plus_profit)} | "
+            f"{m(row.delta)} | {row.rank if row.rank is not None else '—'} |"
+        )
     return "\n".join(lines) + "\n"
 
 

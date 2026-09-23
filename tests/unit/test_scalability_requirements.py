@@ -24,6 +24,7 @@ from construction_os.references import (
 from construction_os.storage.models import (
     AcceptanceActRow,
     Base,
+    CashFlowRow,
     CompanyRow,
     ContractRow,
     CostArticleRow,
@@ -196,6 +197,21 @@ def _seed_tenant_rows(session, company_name: str):
     )
     session.add(obligation)
     session.flush()
+    flow = CashFlowRow(
+        company_id=company.id,
+        contract_id=contract.id,
+        object_id=obj.id,
+        flow_date=date(2026, 1, 21),
+        direction="inflow",
+        amount=Decimal("1"),
+        category="act_payment",
+        plan_or_fact="plan",
+        source_kind="payment_obligation",
+        source_id=obligation.id,
+        valid_from=date(2026, 1, 21),
+    )
+    session.add(flow)
+    session.flush()
     param = ScenarioParamRow(
         company_id=company.id,
         scenario_id=scenario.id,
@@ -223,6 +239,7 @@ def _seed_tenant_rows(session, company_name: str):
             param,
             act,
             obligation,
+            flow,
         )
     }
     return company, rows
