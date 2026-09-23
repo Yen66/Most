@@ -380,7 +380,6 @@ def render_task13_sections():
     return "\n".join(lines) + "\n"
 
 
-
 def render_verdict_sections():
     """E-V1/E-V2/E-V3/E-V5: derive values from the fixture and production functions."""
     import json
@@ -434,6 +433,7 @@ def render_verdict_sections():
         "",
     ]
     return "\n".join(lines)
+
 
 def main():
     print(render() + render_new_sections(), end="")
