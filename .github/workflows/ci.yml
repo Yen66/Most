@@ -38,6 +38,11 @@ jobs:
           DATABASE_URL=sqlite:///construction_os.db construction-os acts pay --company "Demo Co" --contract-number "ДЕМО-АКТ-2026" --act-number "ДЕМО-4" --paid-on 2026-10-08 --amount 1000
           DATABASE_URL=sqlite:///construction_os.db construction-os acts report --company "Demo Co" --as-of 2026-10-28
           DATABASE_URL=sqlite:///construction_os.db construction-os penalty --company "Demo Co" --contract-number "ДЕМО-АКТ-2026" --act-number "ДЕМО-2" --as-of 2026-10-28
+          DATABASE_URL=sqlite:///cashflow_demo.db alembic upgrade head
+          DATABASE_URL=sqlite:///cashflow_demo.db python scripts/seed_cashflow_demo.py
+          DATABASE_URL=sqlite:///cashflow_demo.db construction-os cash-flow build --company "Demo Co" --contract-number "ДЕМО-АКТ-2026"
+          DATABASE_URL=sqlite:///cashflow_demo.db construction-os cash-flow report --company "Demo Co" --as-of 2026-10-31 --rate 0.14
+          DATABASE_URL=sqlite:///construction_os.db construction-os whatif --company "Demo Co" --object "Demo Object" --date 2026-09-20 --cost-multiplier item:MAT=1.10 --price-reduction 0.92
           pytest --collect-only -q | tail -1
           find src tests scripts -name '*.py' | xargs wc -l | tail -1
           python - <<'PY'

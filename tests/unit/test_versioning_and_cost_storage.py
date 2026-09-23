@@ -38,8 +38,8 @@ def seed(session):
     return c, src
 
 
-def test_schema_has_18_tables():
-    assert len(Base.metadata.tables) == 18
+def test_schema_has_19_tables():
+    assert len(Base.metadata.tables) == 19
 
 
 def test_contract_new_fields_types():
@@ -62,6 +62,7 @@ def test_contract_new_fields_types():
         "scenarios",
         "acceptance_acts",
         "payment_obligations",
+        "cash_flows",
     ],
 )
 def test_versioned_tables_have_four_fields(table):
@@ -83,7 +84,7 @@ def test_no_fake_rate_tables():
 
 
 def test_repository_counts():
-    assert len(TENANT_REPOSITORIES) == 14 and len(ALL_REPOSITORIES) == 18
+    assert len(TENANT_REPOSITORIES) == 15 and len(ALL_REPOSITORIES) == 19
 
 
 def test_cost_article_repository_global():
