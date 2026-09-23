@@ -235,7 +235,7 @@ def render_new_sections():
 
 
 def render_task13_sections():
-    """CF1–CF5 and S1–S13/F6: derive every result from production modules."""
+    """CF1-CF5 and S1-S13/F6: derive every result from production modules."""
     from construction_os.calc.cashflow import Flow, daily_balances, financing_cost, gap_report
     from construction_os.calc.costs import CostArticle, CostEntry
     from construction_os.calc.scenarios import ScenarioParam

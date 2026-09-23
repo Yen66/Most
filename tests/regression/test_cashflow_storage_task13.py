@@ -124,7 +124,7 @@ def test_manual_duplicate_allowed_and_provenance(sqlite_session):
 
 def test_manual_company_isolation(sqlite_session):
     a, ca, _, _ = seed(sqlite_session, "A")
-    b, cb, _, _ = seed(sqlite_session, "B")
+    b, _cb, _, _ = seed(sqlite_session, "B")
     add_manual_flow(
         sqlite_session, a.id, T("2026-09-15"),
         "outflow", D("10"), "MAT", contract_id=ca.id,
