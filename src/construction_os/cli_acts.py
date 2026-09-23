@@ -161,6 +161,8 @@ def run_acts(args, session) -> int:
             )
             if previous_refusal is not None:
                 print(f"срок сброшен: новый акт от {act.placed_on}")
+            if act.via_eis is None:
+                print("ПРЕДУПРЕЖДЕНИЕ: via_eis: нет данных — принято ЕИС-актирование")
             obligation = current_obligation(session, company.id, act.id)
             if obligation is None:
                 print("Оплата: обязательство не возникло")
@@ -179,10 +181,14 @@ def run_acts(args, session) -> int:
             print(f"Пеня: {money(penalty.total)}")
             for warning in penalty.warnings:
                 print(f"ПРЕДУПРЕЖДЕНИЕ: {warning}")
+            overdue = (
+                (obligation.paid_on is not None and obligation.paid_on > obligation.due_on)
+                or (args.as_of > obligation.due_on and paid < obligation.amount)
+            )
             print(
                 f"Оплата: due_on={obligation.due_on}; basis={obligation.term_basis}; "
                 f"оплачено={money(paid)}; осталось={money(obligation.amount - paid)}; "
-                f"просрочка={'да' if args.as_of > obligation.due_on and paid < obligation.amount else 'нет'}"
+                f"просрочка={'да' if overdue else 'нет'}"
             )
         return 0
     except (LookupError, ActFlowError, CalendarNotCoveredError, ValueError) as error:
