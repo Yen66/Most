@@ -67,6 +67,7 @@ def run_verdict(args, session) -> int:
             f"обычно присутствует на объектах этого типа; {RISK_REFERENCES[code]}"
         )
     print("Остальные отсутствующие статьи — нет данных: " + ", ".join(completeness.missing_other))
+    summary_status = verdict.status or "вердикт неполный — нет затрат"
     if verdict.status is None:
         print("вердикт неполный: нет данных по затратам — заполните costs template и costs import")
     else:
@@ -92,16 +93,16 @@ def run_verdict(args, session) -> int:
             from construction_os.calc.verdict import traffic_light
 
             award_status = traffic_light(at_award.profit_before_tax, award.net)
+            summary_status = award_status
             print(
                 f"При вашем снижении: прибыль {format_money_ru(at_award.profit_before_tax)}; "
                 f"налог {format_money_ru(at_award.income_tax)}; "
                 f"маржа {format_percent(at_award.margin_pct)}; {award_status}"
             )
     ten = next(row for row in verdict.bids if row.reduction == Decimal("0.10") and not row.is_award)
-    status = verdict.status or "вердикт неполный — нет затрат"
     print(
         f"ИТОГ: Выручка {format_money_ru(report.revenue_gross)}; "
         f"при снижении на 10% потеря {format_money_ru(-ten.delta_net)} без НДС; "
-        f"{len(completeness.risks)} нормативных рисков не учтены; {status}."
+        f"{len(completeness.risks)} нормативных рисков не учтены; {summary_status}."
     )
     return 0
