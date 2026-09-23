@@ -12,3 +12,4 @@ __pycache__/
 *.sqlite3
 backups/
 tests/fixtures/generated/
+*.egg-info/
