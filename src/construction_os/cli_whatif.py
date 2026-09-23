@@ -16,7 +16,7 @@ from construction_os.calc.whatif import (
     target_scope,
 )
 from construction_os.references import RateType, get_rate
-from construction_os.reports import format_money_ru
+from construction_os.reports import format_money_ru, format_percent
 from construction_os.storage.economics import find_active_object, load_economics_report
 from construction_os.storage.models import CostArticleRow, CostEntryRow
 from construction_os.storage.queries import object_lineage_ids
@@ -76,7 +76,11 @@ def _print_values(name, result) -> None:
         ("Маржа %", p.margin_pct),
         ("Точка безубыточности", result.breakeven.value),
     ):
-        print(f"{label}: {format_money_ru(value) if value is not None else 'нет данных'}")
+        if label == "Маржа %":
+            display = format_percent(value) if value is not None else "нет данных"
+        else:
+            display = format_money_ru(value) if value is not None else "нет данных"
+        print(f"{label}: {display}")
 
 
 def run_whatif(args, session) -> int:
@@ -145,7 +149,8 @@ def run_whatif(args, session) -> int:
                 a = getattr(base.profit, attr)
                 b = getattr(after.profit, attr)
                 if a is not None and b is not None:
-                    print(f"{label}: {b - a:+.2f}")
+                    unit = " п.п." if attr == "margin_pct" else " ₽"
+                    print(f"{label}: {b - a:+.2f}{unit}")
             if base.breakeven.value is not None and after.breakeven.value is not None:
                 print(f"Безубыточность: {after.breakeven.value - base.breakeven.value:+.2f}")
         else:

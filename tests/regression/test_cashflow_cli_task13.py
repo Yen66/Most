@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from construction_os.cli import main
@@ -109,13 +109,13 @@ def test_CLI_report_read_only(tmp_path, monkeypatch, capsys):
     capsys.readouterr()
     with Session(engine) as session:
         before = {
-            table.name: session.scalar(select(func.count()).select_from(table))
+            table.name: tuple(session.execute(select(table)).all())
             for table in Base.metadata.tables.values()
         }
     assert main(cmd("report", "--as-of", "2026-10-31", "--rate", "0.14")) == 0
     with Session(engine) as session:
         after = {
-            table.name: session.scalar(select(func.count()).select_from(table))
+            table.name: tuple(session.execute(select(table)).all())
             for table in Base.metadata.tables.values()
         }
     assert before == after

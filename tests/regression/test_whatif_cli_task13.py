@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from construction_os.cli import main
@@ -106,7 +106,7 @@ def test_CLI_S6_and_read_only(tmp_path, monkeypatch, capsys):
     engine = setup_db(tmp_path, monkeypatch)
     with Session(engine) as session:
         before = {
-            table.name: session.scalar(select(func.count()).select_from(table))
+            table.name: tuple(session.execute(select(table)).all())
             for table in Base.metadata.tables.values()
         }
     assert (
@@ -124,9 +124,10 @@ def test_CLI_S6_and_read_only(tmp_path, monkeypatch, capsys):
     assert "Прибыль до налога: -27 000" in output
     assert "Выручка без НДС: 920 000" in output
     assert "Полнота: неполный" in output
+    assert "Маржа %: -2,93 %" in output
     with Session(engine) as session:
         after = {
-            table.name: session.scalar(select(func.count()).select_from(table))
+            table.name: tuple(session.execute(select(table)).all())
             for table in Base.metadata.tables.values()
         }
     assert before == after
