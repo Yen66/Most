@@ -286,3 +286,9 @@ def test_verdict_read_only(sqlite_session, fixtures_dir):
         for table in Base.metadata.sorted_tables
     }
     assert after == before
+
+def test_award_final_line_uses_reduced_profit(sqlite_session, capsys):
+    demo(sqlite_session, D("0.87"))
+    assert run_verdict(args("Demo Co", "Demo Object"), sqlite_session) == 0
+    last = capsys.readouterr().out.strip().splitlines()[-1]
+    assert last.endswith("НЕ ВХОДИТЬ.")
