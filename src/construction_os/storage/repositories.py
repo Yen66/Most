@@ -10,6 +10,7 @@ from sqlalchemy import select, text
 from .models import (
     AcceptanceActRow,
     CompanyRow,
+    CashFlowRow,
     ContractRow,
     CostArticleRow,
     CostEntryRow,
@@ -302,6 +303,10 @@ class PaymentObligationRepository(BaseRepository):
     business_key = ("act_id",)
 
 
+class CashFlowRepository(BaseRepository):
+    model = CashFlowRow
+
+
 TENANT_REPOSITORIES = (
     DocumentRepository,
     ValueSourceRepository,
@@ -309,6 +314,7 @@ TENANT_REPOSITORIES = (
     ContractRepository,
     AcceptanceActRepository,
     PaymentObligationRepository,
+    CashFlowRepository,
     ObjectRepository,
     WorkItemRepository,
     ScheduleTaskRepository,
