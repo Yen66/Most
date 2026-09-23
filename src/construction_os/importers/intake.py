@@ -18,7 +18,7 @@ from construction_os.importers.costs import parse_costs
 from construction_os.importers.persist import persist_schedule, persist_vor
 from construction_os.importers.schedule import parse_schedule
 from construction_os.importers.vor import parse_vor
-from construction_os.storage.models import CompanyRow, ObjectRow
+from construction_os.storage.models import ObjectRow
 from construction_os.storage.queries import object_revenues, portfolio_revenue
 
 
@@ -77,7 +77,9 @@ def _money_string(value: Decimal | None) -> str | None:
     return f"{value:.2f}" if value is not None else None
 
 
-def intake_batch(session, company_name: str, paths: list[str | Path], on_date: date | None = None):
+def intake_batch(
+    session, company_name: str, paths: list[str | Path], on_date: date | None = None
+):
     if not company_name or not company_name.strip():
         raise ValueError("укажите --company")
     on_date = on_date or date.today()
@@ -115,11 +117,15 @@ def intake_batch(session, company_name: str, paths: list[str | Path], on_date: d
             try:
                 with session.begin_nested():
                     if kind == "vor":
-                        result = persist_vor(session, company_name, parsed, path, imported_on=on_date)
+                        result = persist_vor(
+                            session, company_name, parsed, path, imported_on=on_date
+                        )
                     elif kind == "schedule":
                         result = persist_schedule(session, company_name, parsed, path)
                     else:
-                        result = persist_costs(session, company_name, parsed, path, imported_on=on_date)
+                        result = persist_costs(
+                            session, company_name, parsed, path, imported_on=on_date
+                        )
                     item.action = "skipped" if result.skipped_duplicate else "imported"
                     if result.object_id is not None:
                         name = session.scalar(

@@ -18,8 +18,15 @@ def run_intake(args, session) -> int:
     print("Файл | Тип | Действие | Позиций | С НДС")
     for item in receipt["files"]:
         print(
-            f'{item["file"]} | {item["type"]} | {item["action"]} | '
-            f'{item["positions"]} | {item["total_gross"] or "—"}'
+            " | ".join(
+                (
+                    item["file"],
+                    item["type"],
+                    item["action"],
+                    str(item["positions"]),
+                    item["total_gross"] or "—",
+                )
+            )
         )
         for warning in item["warnings"]:
             print(f"  ПРЕДУПРЕЖДЕНИЕ: {warning}")
@@ -27,9 +34,8 @@ def run_intake(args, session) -> int:
             print(f"  ОШИБКА: {error}")
     summary = receipt["summary"]
     print(
-        f'ИТОГО: imported: {summary["imported"]}, skipped: {summary["skipped"]}, '
-        f'rejected: {summary["rejected"]}; портфель с НДС: '
-        f'{summary["portfolio_gross"]}; без НДС: {summary["portfolio_net"]}'
+        "ИТОГО: imported: {imported}, skipped: {skipped}, rejected: {rejected}; "
+        "портфель с НДС: {portfolio_gross}; без НДС: {portfolio_net}".format(**summary)
     )
     if args.report:
         Path(args.report).write_text(receipt_json(receipt) + "\n", encoding="utf-8")

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import json
 from datetime import date
-from decimal import Decimal
-from pathlib import Path
 from types import SimpleNamespace
 
 from openpyxl import load_workbook
@@ -26,10 +24,15 @@ def _files(fixtures_dir):
 
 
 def test_batch_four_reference_values(sqlite_session, fixtures_dir):
-    receipt = intake_batch(sqlite_session, "Подрядчик", _files(fixtures_dir), date(2026, 9, 20))
+    receipt = intake_batch(
+        sqlite_session, "Подрядчик", _files(fixtures_dir), date(2026, 9, 20)
+    )
     assert receipt["summary"] == {
-        "imported": 4, "skipped": 0, "rejected": 0,
-        "portfolio_gross": "198690812.22", "portfolio_net": "162861321.49",
+        "imported": 4,
+        "skipped": 0,
+        "rejected": 0,
+        "portfolio_gross": "198690812.22",
+        "portfolio_net": "162861321.49",
     }
     assert [row["positions"] for row in receipt["files"]][0] == 29
 
@@ -92,7 +95,9 @@ def test_shifted_header(sqlite_session, fixtures_dir):
 
 def test_json_receipt_matches_stdout(sqlite_session, fixtures_dir, tmp_path, capsys):
     path = tmp_path / "receipt.json"
-    args = SimpleNamespace(company="A", files=[str(_files(fixtures_dir)[0])], report=str(path))
+    args = SimpleNamespace(
+        company="A", files=[str(_files(fixtures_dir)[0])], report=str(path)
+    )
     assert run_intake(args, sqlite_session) == 0
     receipt = json.loads(path.read_text(encoding="utf-8"))
     stdout = capsys.readouterr().out
@@ -111,13 +116,18 @@ def test_cost_sheet_before_vor(sqlite_session, fixtures_dir, tmp_path):
     from construction_os.importers.cost_template import make_template
     from construction_os.references import DEFAULT_COST_ARTICLES
     from construction_os.storage.models import CostArticleRow, CostEntryRow
+
     for index, (code, category, name) in enumerate(DEFAULT_COST_ARTICLES, 1):
-        sqlite_session.add(CostArticleRow(code=code, category=category, name=name, sort_order=index))
+        sqlite_session.add(
+            CostArticleRow(code=code, category=category, name=name, sort_order=index)
+        )
     sqlite_session.flush()
     path = tmp_path / "costs.xlsx"
     make_template(path)
     book = load_workbook(path)
-    book["Затраты"].append(["vor_object_a", None, "MAT", None, None, None, 100, "fixed", None, "net", None, None, None])
+    book["Затраты"].append(
+        ["vor_object_a", None, "MAT", None, None, None, 100, "fixed", None, "net", None, None, None]
+    )
     book.save(path)
     receipt = intake_batch(sqlite_session, "A", [path, _files(fixtures_dir)[0]])
     assert receipt["summary"]["imported"] == 2
