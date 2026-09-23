@@ -155,3 +155,16 @@ def test_cost_sheet_before_vor(sqlite_session, fixtures_dir, tmp_path):
     receipt = intake_batch(sqlite_session, "A", [path, _files(fixtures_dir)[0]])
     assert receipt["summary"]["imported"] == 2
     assert sqlite_session.scalar(select(func.count()).select_from(CostEntryRow)) == 1
+
+
+def test_all_skipped_batch_returns_zero(sqlite_session, fixtures_dir, capsys):
+    args = SimpleNamespace(
+        company="A", files=[str(path) for path in _files(fixtures_dir)], report=None
+    )
+    assert run_intake(args, sqlite_session) == 0
+    before = sqlite_session.scalar(select(func.count()).select_from(DocumentRow))
+    capsys.readouterr()
+    assert run_intake(args, sqlite_session) == 0
+    output = capsys.readouterr().out
+    assert "imported: 0, skipped: 4" in output
+    assert sqlite_session.scalar(select(func.count()).select_from(DocumentRow)) == before
