@@ -34,8 +34,11 @@ def test_named_checks_on_active_database(db_session, kind, constraint):
     db_session.add(company)
     db_session.flush()
     contract = ContractRepository(db_session).add(
-        company.id, contract_type="government", number="N",
-        signed_on=date(2026, 8, 1), price_is_final=True,
+        company.id,
+        contract_type="government",
+        number="N",
+        signed_on=date(2026, 8, 1),
+        price_is_final=True,
         valid_from=date(2026, 8, 1),
     )
     act_values = {

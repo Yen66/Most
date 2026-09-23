@@ -136,9 +136,7 @@ def run_acts(args, session) -> int:
             elif act.status == "refused":
                 delta = (deadline - act.refusal_on).days
                 status = (
-                    "отказ в срок"
-                    if delta >= 0
-                    else f"отказ с просрочкой {-delta} календ. дн."
+                    "отказ в срок" if delta >= 0 else f"отказ с просрочкой {-delta} календ. дн."
                 )
             else:
                 delta = (deadline - args.as_of).days
