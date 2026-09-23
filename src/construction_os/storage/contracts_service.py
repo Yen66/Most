@@ -67,7 +67,9 @@ def get_contract(session, company_name: str, number: str):
     if row is None:
         raise LookupError(f"нет данных: договор {number}")
     count = session.scalar(
-        select(func.count()).select_from(ContractRow).where(
+        select(func.count())
+        .select_from(ContractRow)
+        .where(
             ContractRow.company_id == company.id,
             ContractRow.number == number,
         )

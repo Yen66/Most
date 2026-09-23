@@ -12,7 +12,6 @@ from construction_os.references import DEFAULT_COST_ARTICLES
 from construction_os.storage.contracts_service import get_contract, set_contract
 from construction_os.storage.models import (
     CompanyRow,
-    ContractRow,
     CostArticleRow,
     CostEntryRow,
     ObjectRow,
@@ -150,9 +149,7 @@ def test_payment_delay_warning(sqlite_session):
 
 def test_provenance_exact_user_input(sqlite_session):
     c = company(sqlite_session)
-    row, _ = set_contract(
-        sqlite_session, "A", "N", award_reduction_factor=D("0.87"), actor="owner"
-    )
+    row, _ = set_contract(sqlite_session, "A", "N", award_reduction_factor=D("0.87"), actor="owner")
     refs = list(
         sqlite_session.scalars(
             select(ValueRefRow).where(
@@ -213,7 +210,12 @@ def test_cli_set_show_roundtrip(sqlite_session, capsys):
     assert run_contract(SimpleNamespace(contract_command="set", **data), sqlite_session) == 0
     out = capsys.readouterr().out
     assert "ПРЕДУПРЕЖДЕНИЕ" in out
-    assert run_contract(SimpleNamespace(contract_command="show", company="A", number="N"), sqlite_session) == 0
+    assert (
+        run_contract(
+            SimpleNamespace(contract_command="show", company="A", number="N"), sqlite_session
+        )
+        == 0
+    )
     shown = capsys.readouterr().out
     assert "версий в истории: 1" in shown
     assert "award_reduction_factor: 0.870000" in shown
@@ -255,7 +257,10 @@ def test_replacing_contract_updates_object_link(sqlite_session):
 
 def test_contract_not_found_show(sqlite_session, capsys):
     company(sqlite_session)
-    assert run_contract(
-        SimpleNamespace(contract_command="show", company="A", number="missing"), sqlite_session
-    ) == 2
+    assert (
+        run_contract(
+            SimpleNamespace(contract_command="show", company="A", number="missing"), sqlite_session
+        )
+        == 2
+    )
     assert "нет данных: договор missing" in capsys.readouterr().out

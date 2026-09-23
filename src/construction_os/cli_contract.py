@@ -17,7 +17,9 @@ def configure_contract(sub) -> None:
     setter.add_argument("--company", required=True)
     setter.add_argument("--number", required=True)
     setter.add_argument("--signed-on", type=date.fromisoformat)
-    setter.add_argument("--type", dest="contract_type", choices=("government", "commercial", "unknown"))
+    setter.add_argument(
+        "--type", dest="contract_type", choices=("government", "commercial", "unknown")
+    )
     setter.add_argument("--advance-pct", type=_decimal)
     setter.add_argument("--payment-delay-days", type=int)
     setter.add_argument("--security-amount", type=_decimal)
@@ -58,9 +60,7 @@ def run_contract(args, session) -> int:
                     "reason",
                 )
             }
-            contract, warnings = set_contract(
-                session, args.company, args.number, **values
-            )
+            contract, warnings = set_contract(session, args.company, args.number, **values)
             session.commit()
             print(f"Договор {contract.number}: условия сохранены; версия {contract.id}")
             for warning in warnings:
