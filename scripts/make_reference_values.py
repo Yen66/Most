@@ -230,7 +230,7 @@ def render_new_sections():
         f"| P8 | повторно размещён 2026-09-25; новый срок "
         f"{signing_deadline(date(2026, 9, 25), working)} | — |",
     ]
-    return "\n".join(lines) + "\n" + render_task13_sections()
+    return "\n".join(lines) + "\n" + render_task13_sections() + render_verdict_sections()
 
 
 def render_task13_sections():
@@ -379,6 +379,61 @@ def render_task13_sections():
         )
     return "\n".join(lines) + "\n"
 
+
+
+def render_verdict_sections():
+    """E-V1/E-V2/E-V3/E-V5: derive values from the fixture and production functions."""
+    import json
+    from pathlib import Path
+
+    from construction_os.calc.verdict import bid_grid, cost_completeness, traffic_light
+    from construction_os.money import money
+    from construction_os.references.cost_articles import DEFAULT_COST_ARTICLES
+
+    fixture = Path(__file__).resolve().parents[1] / "tests/fixtures/data/vor_object_a.json"
+    rows = json.loads(fixture.read_text(encoding="utf-8"))["items"]
+    amounts = [money(D(str(row[3])) * money(D(str(row[4])))) for row in rows]
+    vat = get_rate(RateType.VAT_RATE, ON_DATE).value
+    bids = bid_grid(amounts, vat)
+    complete = cost_completeness(set(), [code for code, _, _ in DEFAULT_COST_ARTICLES])
+    tax = get_rate(RateType.PROFIT_TAX, ON_DATE).value
+    demo = calculate_profit(D("1000000"), D("870000"), D("27000"), D("0"), tax)
+    award = bid_grid([D("1220000")], vat, D("0.87"))[-1]
+    award_profit = calculate_profit(award.net, D("870000"), D("27000"), D("0"), tax)
+    lines = [
+        "",
+        "## Вердикт",
+        "",
+        f"Сетка E-V1 для объекта A: {len(rows)} позиций; позиционное округление, затем объектный сплит НДС 22%.",
+        "",
+        "| Снижение | С НДС | Без НДС | НДС | Δ без НДС |",
+        "|---:|---:|---:|---:|---:|",
+    ]
+    for bid in bids:
+        lines.append(
+            f"| {p(bid.reduction * D('100'))} | {m(bid.gross)} | {m(bid.net)} | "
+            f"{m(bid.vat)} | {m(bid.delta_net)} |"
+        )
+    lines += [
+        "",
+        "Полнота E-V2: нормативные риски "
+        + ", ".join(complete.risks)
+        + f" ({len(complete.risks)}); остальные отсутствующие статьи "
+        + f"{len(complete.missing_other)}; всего отсутствует "
+        + f"{len(complete.risks) + len(complete.missing_other)}.",
+        "",
+        f"Демо E-V3: прибыль до налога {m(demo.profit_before_tax)}; "
+        f"маржа {p(demo.margin_pct)}; "
+        f"светофор {traffic_light(demo.profit_before_tax, demo.revenue_net)}.",
+        "",
+        f"Демо E-V5 при факторе 0.87: снижение {p(award.reduction * D('100'))}; "
+        f"с НДС {m(award.gross)}; без НДС {m(award.net)}; "
+        f"прибыль {m(award_profit.profit_before_tax)}; "
+        f"маржа {p(award_profit.margin_pct)}; "
+        f"светофор {traffic_light(award_profit.profit_before_tax, award.net)}.",
+        "",
+    ]
+    return "\n".join(lines)
 
 def main():
     print(render() + render_new_sections(), end="")
