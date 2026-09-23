@@ -23,6 +23,7 @@ from construction_os.calc import (
 from construction_os.cli_acts import configure_acts, run_acts
 from construction_os.cli_calendar import configure_calendar, run_calendar
 from construction_os.cli_cashflow import configure_cashflow, run_cashflow
+from construction_os.cli_contract import configure_contract, run_contract
 from construction_os.cli_intake import configure_intake, run_intake
 from construction_os.cli_penalty import configure_penalty, run_penalty
 from construction_os.cli_verdict import configure_verdict, run_verdict
@@ -99,6 +100,7 @@ def _parser() -> argparse.ArgumentParser:
     configure_cashflow(sub)
     configure_intake(sub)
     configure_verdict(sub)
+    configure_contract(sub)
     return parser
 
 
@@ -107,6 +109,14 @@ def _print_cost_report(report, on_date: date) -> None:
     print(
         f"{report.company.name} / {report.object_row.name} / {report.contract.number if report.contract else 'нет данных'} / {complete}"
     )
+    if report.contract is not None:
+        c = report.contract
+        print(
+            f"Договорные условия: фактор={c.award_reduction_factor if c.award_reduction_factor is not None else 'нет данных'}; "
+            f"аванс={c.advance_pct if c.advance_pct is not None else 'нет данных'}; "
+            f"удержание={c.warranty_retention_pct if c.warranty_retention_pct is not None else 'нет данных'}; "
+            f"казначейство={c.treasury_account if c.treasury_account is not None else 'нет данных'}"
+        )
     print(f"Выручка с НДС: {format_money_ru(report.revenue_gross)}")
     print(f"Ставка НДС: {format_percent(report.vat_rate * Decimal('100'))}")
     print(f"Выручка без НДС: {format_money_ru(report.revenue_net)}")
@@ -216,6 +226,8 @@ def main(argv=None) -> int:
             return run_intake(args, session)
         if args.command == "verdict":
             return run_verdict(args, session)
+        if args.command == "contract":
+            return run_contract(args, session)
         if args.command == "import":
             result = (
                 persist_vor(session, args.company, parse_vor(args.path), args.path)
