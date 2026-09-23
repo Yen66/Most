@@ -24,8 +24,8 @@ from .models import (
     ValueConfirmationRow,
     ValueRefRow,
     ValueSourceRow,
-    WorkItemRow,
     WorkCalendarRow,
+    WorkItemRow,
 )
 
 
@@ -286,14 +286,10 @@ class WorkCalendarRepository(BaseRepository):
     tenant_scoped = False
 
     def get_by_date(self, day: date):
-        return self.session.scalar(
-            select(WorkCalendarRow).where(WorkCalendarRow.cal_date == day)
-        )
+        return self.session.scalar(select(WorkCalendarRow).where(WorkCalendarRow.cal_date == day))
 
 
-EXCLUDED_TABLES = frozenset(
-    {"companies", "reference_rates", "cost_articles", "work_calendar"}
-)
+EXCLUDED_TABLES = frozenset({"companies", "reference_rates", "cost_articles", "work_calendar"})
 
 
 class AcceptanceActRepository(BaseRepository):

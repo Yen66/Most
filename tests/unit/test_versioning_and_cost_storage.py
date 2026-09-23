@@ -52,7 +52,17 @@ def test_contract_new_fields_types():
 
 
 @pytest.mark.parametrize(
-    "table", ["contracts", "objects", "work_items", "schedule_tasks", "cost_entries", "scenarios", "acceptance_acts", "payment_obligations"]
+    "table",
+    [
+        "contracts",
+        "objects",
+        "work_items",
+        "schedule_tasks",
+        "cost_entries",
+        "scenarios",
+        "acceptance_acts",
+        "payment_obligations",
+    ],
 )
 def test_versioned_tables_have_four_fields(table):
     assert {"valid_from", "valid_to", "superseded_by", "replace_reason"} <= set(

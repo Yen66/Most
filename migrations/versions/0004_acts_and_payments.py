@@ -34,9 +34,7 @@ def upgrade() -> None:
         sa.Column("superseded_by", sa.Uuid(), sa.ForeignKey("acceptance_acts.id")),
         sa.Column("replace_reason", sa.Text()),
         sa.CheckConstraint("amount_gross > 0", name="ck_acts_amount_positive"),
-        sa.CheckConstraint(
-            "status IN ('placed','signed','refused')", name="ck_acts_status"
-        ),
+        sa.CheckConstraint("status IN ('placed','signed','refused')", name="ck_acts_status"),
         sa.CheckConstraint(
             "status <> 'placed' OR placed_on IS NOT NULL",
             name="ck_acts_status_requires_placed_on",

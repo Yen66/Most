@@ -29,17 +29,18 @@ def calendar(sqlite_session):
 @pytest.mark.parametrize("year", [2026, 2027])
 def test_seed_monthly_and_annual_totals(calendar, year):
     rows = calendar.session.scalars(
-        select(WorkCalendarRow).where(
-            func.extract("year", WorkCalendarRow.cal_date) == year
-        )
+        select(WorkCalendarRow).where(func.extract("year", WorkCalendarRow.cal_date) == year)
     ).all()
     assert len(rows) == 365
     assert sum(row.is_working for row in rows) == 247
     assert sum(not row.is_working for row in rows) == 118
-    assert tuple(
-        sum(row.is_working for row in rows if row.cal_date.month == month)
-        for month in range(1, 13)
-    ) == EXPECTED_MONTHS[year]
+    assert (
+        tuple(
+            sum(row.is_working for row in rows if row.cal_date.month == month)
+            for month in range(1, 13)
+        )
+        == EXPECTED_MONTHS[year]
+    )
 
 
 @pytest.mark.parametrize(
@@ -70,7 +71,9 @@ def test_special_dates(calendar, day, working, kind):
 )
 def test_shortened_days_exact(calendar, year, expected):
     rows = calendar.session.scalars(select(WorkCalendarRow)).all()
-    assert {str(row.cal_date) for row in rows if row.cal_date.year == year and row.is_shortened} == expected
+    assert {
+        str(row.cal_date) for row in rows if row.cal_date.year == year and row.is_shortened
+    } == expected
 
 
 @pytest.mark.parametrize(

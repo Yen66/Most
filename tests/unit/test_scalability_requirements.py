@@ -22,8 +22,8 @@ from construction_os.references import (
     get_rate,
 )
 from construction_os.storage.models import (
-    Base,
     AcceptanceActRow,
+    Base,
     CompanyRow,
     ContractRow,
     CostArticleRow,
@@ -41,14 +41,35 @@ from construction_os.storage.models import (
     WorkItemRow,
 )
 from construction_os.storage.repositories import (
-    TENANT_REPOSITORIES,
     EXCLUDED_TABLES,
+    TENANT_REPOSITORIES,
     ImmutableRecordError,
     WorkItemRepository,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-FORBIDDEN_RATES = {0.20, 0.22, 1.22, 0.25, 0.30, 0.14, 0.027, 1.25, 0.75, 0.03, 0.87, 0.21, 0.18, 0.17, 0.165, 0.16, 0.155, 0.15, 0.145, 0.1425}
+FORBIDDEN_RATES = {
+    0.20,
+    0.22,
+    1.22,
+    0.25,
+    0.30,
+    0.14,
+    0.027,
+    1.25,
+    0.75,
+    0.03,
+    0.87,
+    0.21,
+    0.18,
+    0.17,
+    0.165,
+    0.16,
+    0.155,
+    0.15,
+    0.145,
+    0.1425,
+}
 
 
 def _seed_tenant_rows(session, company_name: str):

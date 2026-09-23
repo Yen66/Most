@@ -3,9 +3,12 @@ from decimal import Decimal
 
 import pytest
 
-from construction_os.storage.repositories import EXCLUDED_TABLES
 from construction_os.storage.models import Base, CompanyRow, ObjectRow, ValueSourceRow
-from construction_os.storage.repositories import ImmutableRecordError, WorkItemRepository
+from construction_os.storage.repositories import (
+    EXCLUDED_TABLES,
+    ImmutableRecordError,
+    WorkItemRepository,
+)
 
 
 def seed(s, name):

@@ -64,9 +64,7 @@ class PenaltyResult:
     days: int
 
 
-def delay_days(
-    due_on: date, paid_on: date | None = None, as_of: date | None = None
-) -> int:
+def delay_days(due_on: date, paid_on: date | None = None, as_of: date | None = None) -> int:
     """Calendar days after due_on, including the settlement/report date."""
     if as_of is None:
         raise ValueError("as_of is required")
@@ -92,16 +90,22 @@ def penalty_segments(
     if paid_on is None or paid_on > as_of:
         return (
             DebtSegment(
-                amount, due_on + timedelta(days=1), as_of,
-                (as_of - due_on).days, False,
+                amount,
+                due_on + timedelta(days=1),
+                as_of,
+                (as_of - due_on).days,
+                False,
             ),
         )
     segments = []
     if paid_on > due_on:
         segments.append(
             DebtSegment(
-                amount, due_on + timedelta(days=1), paid_on,
-                (paid_on - due_on).days, True,
+                amount,
+                due_on + timedelta(days=1),
+                paid_on,
+                (paid_on - due_on).days,
+                True,
             )
         )
     remaining = amount - paid_amount
@@ -109,8 +113,11 @@ def penalty_segments(
     if remaining > 0 and as_of > after:
         segments.append(
             DebtSegment(
-                remaining, after + timedelta(days=1), as_of,
-                (as_of - after).days, False,
+                remaining,
+                after + timedelta(days=1),
+                as_of,
+                (as_of - after).days,
+                False,
             )
         )
     return tuple(segments)
@@ -135,9 +142,7 @@ def rate_history_between(
         first = max(start, item.valid_from)
         last = min(end, item.valid_to or end)
         if first <= last:
-            result.append(
-                RateHistoryEntry(first, last, item.value, item.document_number)
-            )
+            result.append(RateHistoryEntry(first, last, item.value, item.document_number))
     return tuple(result)
 
 
@@ -156,31 +161,27 @@ def calculate_penalty(
         raise ValueError("amount must be positive")
     if penalty_cap_pct is not None and penalty_cap_pct < 0:
         raise ValueError("penalty_cap_pct cannot be negative")
-    raw_segments = penalty_segments(
-        amount, due_on, paid_on, paid_amount, as_of
-    )
-    final_rate_date = rate_date or (
-        raw_segments[-1].end if raw_segments else as_of
-    )
+    raw_segments = penalty_segments(amount, due_on, paid_on, paid_amount, as_of)
+    final_rate_date = rate_date or (raw_segments[-1].end if raw_segments else as_of)
     selected = get_rate(RateType.KEY_RATE, final_rate_date)
     segments = []
     for raw in raw_segments:
-        on_date = rate_date or (
-            raw.end if raw.closed_by_payment else as_of
-        )
+        on_date = rate_date or (raw.end if raw.closed_by_payment else as_of)
         rate = get_rate(RateType.KEY_RATE, on_date)
         segments.append(
             PenaltySegment(
-                raw.debt, raw.start, raw.end, raw.days, rate.value,
+                raw.debt,
+                raw.start,
+                raw.end,
+                raw.days,
+                rate.value,
                 penalty_for_segment(raw.debt, raw.days, rate.value),
-                rate.valid_from, rate.document_number,
+                rate.valid_from,
+                rate.document_number,
             )
         )
     uncapped = money(sum((s.amount for s in segments), Decimal("0")))
-    cap = (
-        money(amount * penalty_cap_pct)
-        if penalty_cap_pct is not None else None
-    )
+    cap = money(amount * penalty_cap_pct) if penalty_cap_pct is not None else None
     total = min(uncapped, cap) if cap is not None else uncapped
     cap_applied = cap is not None and uncapped >= cap
     cap_day = None
@@ -189,24 +190,26 @@ def calculate_penalty(
         elapsed = 0
         for segment in segments:
             for n in range(1, segment.days + 1):
-                if cumulative + penalty_for_segment(
-                    segment.debt, n, segment.rate
-                ) >= cap:
+                if cumulative + penalty_for_segment(segment.debt, n, segment.rate) >= cap:
                     cap_day = elapsed + n
                     break
             if cap_day is not None:
                 break
             cumulative += segment.amount
             elapsed += segment.days
-    final_day = (
-        max(segment.end for segment in segments)
-        if segments else due_on
-    )
+    final_day = max(segment.end for segment in segments) if segments else due_on
     history = rate_history_between(due_on + timedelta(days=1), final_day)
     return PenaltyResult(
-        tuple(segments), total, uncapped, selected.value,
-        selected.valid_from, selected.document_number,
-        cap_applied, cap, cap_day,
+        tuple(segments),
+        total,
+        uncapped,
+        selected.value,
+        selected.valid_from,
+        selected.document_number,
+        cap_applied,
+        cap,
+        cap_day,
         (NO_CAP_WARNING,) if cap is None else (),
-        history, sum(segment.days for segment in segments),
+        history,
+        sum(segment.days for segment in segments),
     )

@@ -8,9 +8,6 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from construction_os.cli_acts import configure_acts, run_acts
-from construction_os.cli_calendar import configure_calendar, run_calendar
-from construction_os.cli_penalty import configure_penalty, run_penalty
 from construction_os.calc import (
     CostArticle,
     CostEntry,
@@ -23,6 +20,9 @@ from construction_os.calc import (
     scenario_revenue,
     summarize_costs,
 )
+from construction_os.cli_acts import configure_acts, run_acts
+from construction_os.cli_calendar import configure_calendar, run_calendar
+from construction_os.cli_penalty import configure_penalty, run_penalty
 from construction_os.importers import (
     article_codes,
     parse_costs,

@@ -93,9 +93,7 @@ def run_acts(args, session) -> int:
             obligation = current_obligation(session, company.id, act.id)
             if obligation is None:
                 raise LookupError("нет данных: обязательство оплаты")
-            paid = register_payment(
-                session, company.id, obligation, args.paid_on, args.amount
-            )
+            paid = register_payment(session, company.id, obligation, args.paid_on, args.amount)
             session.commit()
             print(
                 f"Оплата акта {act.act_number}: {money(paid.paid_amount)}; "
@@ -104,10 +102,12 @@ def run_acts(args, session) -> int:
             return 0
         if args.acts_command == "list":
             rows = session.scalars(
-                select(AcceptanceActRow).where(
+                select(AcceptanceActRow)
+                .where(
                     AcceptanceActRow.company_id == company.id,
                     AcceptanceActRow.valid_to.is_(None),
-                ).order_by(AcceptanceActRow.act_number)
+                )
+                .order_by(AcceptanceActRow.act_number)
             )
             for row in rows:
                 print(f"{row.act_number}: {row.status}; {money(row.amount_gross)}")
@@ -127,7 +127,8 @@ def run_acts(args, session) -> int:
             delta = (deadline - args.as_of).days
             status = (
                 f"осталось {delta} календ. дн."
-                if delta >= 0 else f"просрочено {-delta} календ. дн."
+                if delta >= 0
+                else f"просрочено {-delta} календ. дн."
             )
             print(
                 f"Акт {act.act_number}: {act.status}; сумма {money(act.amount_gross)}; "
@@ -152,8 +153,10 @@ def run_acts(args, session) -> int:
             paid = obligation.paid_amount or Decimal("0")
             contract = session.get(ContractRow, act.contract_id)
             penalty = calculate_penalty(
-                obligation.amount, obligation.due_on,
-                as_of=args.as_of, paid_on=obligation.paid_on,
+                obligation.amount,
+                obligation.due_on,
+                as_of=args.as_of,
+                paid_on=obligation.paid_on,
                 paid_amount=obligation.paid_amount,
                 penalty_cap_pct=contract.penalty_cap_pct,
             )

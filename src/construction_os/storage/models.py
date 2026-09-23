@@ -431,7 +431,10 @@ class AcceptanceActRow(Base):
             name="ck_acts_refusal_after_placed",
         ),
         Index(
-            "uq_acceptance_act_current", "company_id", "contract_id", "act_number",
+            "uq_acceptance_act_current",
+            "company_id",
+            "contract_id",
+            "act_number",
             unique=True,
             postgresql_where=column("valid_to").is_(None),
             sqlite_where=column("valid_to").is_(None),
@@ -458,9 +461,7 @@ class AcceptanceActRow(Base):
     status: Mapped[str] = mapped_column(Text, nullable=False)
     valid_from: Mapped[date] = mapped_column(Date, nullable=False)
     valid_to: Mapped[date | None] = mapped_column(Date)
-    superseded_by: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("acceptance_acts.id")
-    )
+    superseded_by: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("acceptance_acts.id"))
     replace_reason: Mapped[str | None] = mapped_column(Text)
 
 
@@ -483,7 +484,9 @@ class PaymentObligationRow(Base):
             name="ck_pay_obl_paid_range",
         ),
         Index(
-            "uq_payment_obligation_current", "company_id", "act_id",
+            "uq_payment_obligation_current",
+            "company_id",
+            "act_id",
             unique=True,
             postgresql_where=column("valid_to").is_(None),
             sqlite_where=column("valid_to").is_(None),
@@ -504,7 +507,5 @@ class PaymentObligationRow(Base):
     paid_amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
     valid_from: Mapped[date] = mapped_column(Date, nullable=False)
     valid_to: Mapped[date | None] = mapped_column(Date)
-    superseded_by: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("payment_obligations.id")
-    )
+    superseded_by: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("payment_obligations.id"))
     replace_reason: Mapped[str | None] = mapped_column(Text)

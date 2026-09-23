@@ -29,30 +29,60 @@ def main() -> None:
             valid_from=date(2026, 8, 1),
         )
         _first, obligation, _ = create_act(
-            session, company.id, contract, "ДЕМО-1",
-            Decimal("10000.00"), date(2026, 9, 1),
-            signed_on=date(2026, 9, 29), via_eis=True, actor="demo",
+            session,
+            company.id,
+            contract,
+            "ДЕМО-1",
+            Decimal("10000.00"),
+            date(2026, 9, 1),
+            signed_on=date(2026, 9, 29),
+            via_eis=True,
+            actor="demo",
         )
         register_payment(
-            session, company.id, obligation, date(2026, 10, 8),
-            Decimal("10000.00"), actor="demo",
+            session,
+            company.id,
+            obligation,
+            date(2026, 10, 8),
+            Decimal("10000.00"),
+            actor="demo",
         )
         create_act(
-            session, company.id, contract, "ДЕМО-2",
-            Decimal("1000000.00"), date(2026, 9, 1),
-            signed_on=date(2026, 9, 29), via_eis=True, actor="demo",
+            session,
+            company.id,
+            contract,
+            "ДЕМО-2",
+            Decimal("1000000.00"),
+            date(2026, 9, 1),
+            signed_on=date(2026, 9, 29),
+            via_eis=True,
+            actor="demo",
         )
         third, _, _ = create_act(
-            session, company.id, contract, "ДЕМО-3",
-            Decimal("20000.00"), date(2026, 9, 1), actor="demo",
+            session,
+            company.id,
+            contract,
+            "ДЕМО-3",
+            Decimal("20000.00"),
+            date(2026, 9, 1),
+            actor="demo",
         )
         change_act_status(
-            session, company.id, third, refusal_on=date(2026, 9, 20),
-            refusal_reason="Замечания", actor="demo",
+            session,
+            company.id,
+            third,
+            refusal_on=date(2026, 9, 20),
+            refusal_reason="Замечания",
+            actor="demo",
         )
         create_act(
-            session, company.id, contract, "ДЕМО-3",
-            Decimal("20000.00"), date(2026, 9, 25), actor="demo",
+            session,
+            company.id,
+            contract,
+            "ДЕМО-3",
+            Decimal("20000.00"),
+            date(2026, 9, 25),
+            actor="demo",
         )
         session.commit()
         print(f"acts demo: {company.name}, contract={contract.number}, acts=3")

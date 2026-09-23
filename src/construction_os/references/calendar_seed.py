@@ -8,8 +8,20 @@ EXPECTED_MONTHS = {
     2027: (15, 19, 22, 22, 19, 21, 22, 22, 22, 21, 20, 22),
 }
 HOLIDAYS = {
-    (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8),
-    (2, 23), (3, 8), (5, 1), (5, 9), (6, 12), (11, 4),
+    (1, 1),
+    (1, 2),
+    (1, 3),
+    (1, 4),
+    (1, 5),
+    (1, 6),
+    (1, 7),
+    (1, 8),
+    (2, 23),
+    (3, 8),
+    (5, 1),
+    (5, 9),
+    (6, 12),
+    (11, 4),
 }
 TRANSFERS_OFF = {
     2026: {
@@ -43,9 +55,7 @@ def iter_calendar_days(year: int) -> list[dict]:
     while day.year == year:
         key = (day.month, day.day)
         if key in TRANSFERS_WORKING[year]:
-            kind, source = "transferred_working", (
-                "ПП 1187 от 17.09.2026"
-            )
+            kind, source = "transferred_working", ("ПП 1187 от 17.09.2026")
         elif key in HOLIDAYS:
             kind, source = "holiday", "ТК ст. 112"
         elif key in TRANSFERS_OFF[year]:
@@ -70,8 +80,10 @@ def iter_calendar_days(year: int) -> list[dict]:
         sum(row["is_working"] for row in rows if row["cal_date"].month == month)
         for month in range(1, 13)
     )
-    if monthly != EXPECTED_MONTHS[year] or len(rows) != 365 or sum(
-        row["is_working"] for row in rows
-    ) != 247:
+    if (
+        monthly != EXPECTED_MONTHS[year]
+        or len(rows) != 365
+        or sum(row["is_working"] for row in rows) != 247
+    ):
         raise ValueError(f"calendar {year} control totals mismatch: {monthly}")
     return rows

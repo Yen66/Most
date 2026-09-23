@@ -53,9 +53,7 @@ def test_key_rate_before_catalog():
 
 
 def test_P1_eis_deadlines_and_penalty(sqlite_session):
-    sqlite_session.add_all(
-        WorkCalendarRow(**row) for row in iter_calendar_days(2026)
-    )
+    sqlite_session.add_all(WorkCalendarRow(**row) for row in iter_calendar_days(2026))
     sqlite_session.flush()
     cal = DbCalendar(sqlite_session).is_working
     signed = signing_deadline(D("2026-09-01"), cal)
@@ -69,13 +67,9 @@ def test_P1_eis_deadlines_and_penalty(sqlite_session):
 
 
 def test_P2_treasury_deadline_and_penalty(sqlite_session):
-    sqlite_session.add_all(
-        WorkCalendarRow(**row) for row in iter_calendar_days(2026)
-    )
+    sqlite_session.add_all(WorkCalendarRow(**row) for row in iter_calendar_days(2026))
     sqlite_session.flush()
-    due = payment_deadline(
-        D("2026-09-29"), 10, DbCalendar(sqlite_session).is_working
-    )
+    due = payment_deadline(D("2026-09-29"), 10, DbCalendar(sqlite_session).is_working)
     result = calculate_penalty(M("1000000"), due, as_of=D("2026-10-28"))
     assert due == D("2026-10-13")
     assert result.days == 15
@@ -84,20 +78,23 @@ def test_P2_treasury_deadline_and_penalty(sqlite_session):
 
 def test_P3_rate_on_payment_date_not_period_weighted():
     result = calculate_penalty(
-        M("1000000"), D("2026-06-15"), as_of=D("2026-08-20"),
-        paid_on=D("2026-08-15"), paid_amount=M("1000000"),
+        M("1000000"),
+        D("2026-06-15"),
+        as_of=D("2026-08-20"),
+        paid_on=D("2026-08-15"),
+        paid_amount=M("1000000"),
     )
     assert result.days == 61
     assert result.rate_used == M("0.14")
     assert result.total == M("28466.67")
-    assert [r.rate for r in result.rate_history] == [
-        M("0.145"), M("0.1425"), M("0.14")
-    ]
+    assert [r.rate for r in result.rate_history] == [M("0.145"), M("0.1425"), M("0.14")]
 
 
 def test_P4_cap_and_day_reached():
     result = calculate_penalty(
-        M("1000000"), D("2026-01-05"), as_of=D("2026-07-24"),
+        M("1000000"),
+        D("2026-01-05"),
+        as_of=D("2026-07-24"),
         penalty_cap_pct=M("0.05"),
     )
     assert result.days == 200
@@ -114,8 +111,11 @@ def test_P4_cap_and_day_reached():
 
 def test_P5_partial_payment_segments():
     result = calculate_penalty(
-        M("1000000"), D("2026-09-10"), as_of=D("2026-10-20"),
-        paid_on=D("2026-09-30"), paid_amount=M("400000"),
+        M("1000000"),
+        D("2026-09-10"),
+        as_of=D("2026-10-20"),
+        paid_on=D("2026-09-30"),
+        paid_amount=M("400000"),
     )
     assert result.days == 40
     assert [(s.debt, s.days, s.amount) for s in result.segments] == [
@@ -123,15 +123,16 @@ def test_P5_partial_payment_segments():
         (M("600000"), 20, M("5600.00")),
     ]
     assert result.total == M("14933.33")
-    assert result.days == delay_days(
-        D("2026-09-10"), as_of=D("2026-10-20")
-    )
+    assert result.days == delay_days(D("2026-09-10"), as_of=D("2026-10-20"))
 
 
 def test_P6_no_delay_when_paid_on_due():
     result = calculate_penalty(
-        M("1000000"), D("2026-09-10"), as_of=D("2026-09-20"),
-        paid_on=D("2026-09-10"), paid_amount=M("1000000"),
+        M("1000000"),
+        D("2026-09-10"),
+        as_of=D("2026-09-20"),
+        paid_on=D("2026-09-10"),
+        paid_amount=M("1000000"),
     )
     assert result.days == 0
     assert result.total == M("0.00")
@@ -144,7 +145,8 @@ def test_P6_no_delay_when_paid_on_due():
 )
 def test_P7_real_scale(days, expected):
     result = calculate_penalty(
-        M("7300000"), D("2026-09-10"),
+        M("7300000"),
+        D("2026-09-10"),
         as_of=D("2026-09-10") + timedelta(days=days),
     )
     assert result.days == days
@@ -158,18 +160,16 @@ def test_E3_rounding_and_half_up():
 
 
 def test_no_cap_exact_warning():
-    result = calculate_penalty(
-        M("1000000"), D("2026-10-08"), as_of=D("2026-10-28")
-    )
+    result = calculate_penalty(M("1000000"), D("2026-10-08"), as_of=D("2026-10-28"))
     assert result.warnings == (NO_CAP_WARNING,)
 
 
 def test_rate_date_override_changes_amount():
-    normal = calculate_penalty(
-        M("1000000"), D("2026-10-08"), as_of=D("2026-10-28")
-    )
+    normal = calculate_penalty(M("1000000"), D("2026-10-08"), as_of=D("2026-10-28"))
     override = calculate_penalty(
-        M("1000000"), D("2026-10-08"), as_of=D("2026-10-28"),
+        M("1000000"),
+        D("2026-10-08"),
+        as_of=D("2026-10-28"),
         rate_date=D("2026-06-22"),
     )
     assert normal.total == M("9333.33")
@@ -179,9 +179,7 @@ def test_rate_date_override_changes_amount():
 
 def test_rate_history_is_informational_only():
     history = rate_history_between(D("2026-06-16"), D("2026-08-15"))
-    assert [r.rate for r in history] == [
-        M("0.145"), M("0.1425"), M("0.14")
-    ]
+    assert [r.rate for r in history] == [M("0.145"), M("0.1425"), M("0.14")]
     assert history[0].start == D("2026-06-16")
     assert history[-1].end == D("2026-08-15")
 
@@ -190,12 +188,8 @@ def test_segments_additive_identity():
     due = D("2026-09-10")
     paid = D("2026-09-30")
     as_of = D("2026-10-20")
-    segments = penalty_segments(
-        M("1000000"), due, paid, M("400000"), as_of
-    )
-    assert sum(segment.days for segment in segments) == delay_days(
-        due, as_of=as_of
-    )
+    segments = penalty_segments(M("1000000"), due, paid, M("400000"), as_of)
+    assert sum(segment.days for segment in segments) == delay_days(due, as_of=as_of)
 
 
 def test_no_penalty_accrual_table():
@@ -206,20 +200,34 @@ def test_no_penalty_accrual_table():
 
 @pytest.mark.parametrize(
     "day",
-    [D("2026-01-12"), D("2026-02-17"), D("2026-03-16"),
-     D("2026-05-01"), D("2026-07-01"), D("2026-09-01"),
-     D("2026-10-01"), D("2026-11-01"), D("2026-12-01"),
-     D("2027-01-11"), D("2027-02-19"), D("2027-03-15"),
-     D("2027-04-15"), D("2027-06-01"), D("2027-07-01"),
-     D("2027-08-01"), D("2027-09-01"), D("2027-10-01"),
-     D("2027-11-01"), D("2027-05-15")],
+    [
+        D("2026-01-12"),
+        D("2026-02-17"),
+        D("2026-03-16"),
+        D("2026-05-01"),
+        D("2026-07-01"),
+        D("2026-09-01"),
+        D("2026-10-01"),
+        D("2026-11-01"),
+        D("2026-12-01"),
+        D("2027-01-11"),
+        D("2027-02-19"),
+        D("2027-03-15"),
+        D("2027-04-15"),
+        D("2027-06-01"),
+        D("2027-07-01"),
+        D("2027-08-01"),
+        D("2027-09-01"),
+        D("2027-10-01"),
+        D("2027-11-01"),
+        D("2027-05-15"),
+    ],
 )
 def test_signing_deadline_identity_grid(sqlite_session, day):
     from construction_os.domain.calendar import add_working_days
 
     sqlite_session.add_all(
-        WorkCalendarRow(**row)
-        for year in (2026, 2027) for row in iter_calendar_days(year)
+        WorkCalendarRow(**row) for year in (2026, 2027) for row in iter_calendar_days(year)
     )
     sqlite_session.flush()
     cal = DbCalendar(sqlite_session).is_working
@@ -227,19 +235,13 @@ def test_signing_deadline_identity_grid(sqlite_session, day):
 
 
 def test_payment_treasury_not_earlier_than_eis(sqlite_session):
-    sqlite_session.add_all(
-        WorkCalendarRow(**row) for row in iter_calendar_days(2026)
-    )
+    sqlite_session.add_all(WorkCalendarRow(**row) for row in iter_calendar_days(2026))
     sqlite_session.flush()
     cal = DbCalendar(sqlite_session).is_working
     signed = D("2026-09-29")
-    assert payment_deadline(signed, 10, cal) >= payment_deadline(
-        signed, 7, cal
-    )
+    assert payment_deadline(signed, 10, cal) >= payment_deadline(signed, 7, cal)
 
 
 def test_no_cap_min_identity():
-    result = calculate_penalty(
-        M("1000000"), D("2026-10-08"), as_of=D("2026-10-28")
-    )
+    result = calculate_penalty(M("1000000"), D("2026-10-08"), as_of=D("2026-10-28"))
     assert result.total == result.total_uncapped

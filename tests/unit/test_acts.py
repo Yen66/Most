@@ -53,8 +53,11 @@ def context(sqlite_session):
     sqlite_session.add_all([company, other])
     sqlite_session.flush()
     contract = ContractRepository(sqlite_session).add(
-        company.id, contract_type="government", number="44-FZ",
-        signed_on=D("2026-08-01"), price_is_final=True,
+        company.id,
+        contract_type="government",
+        number="44-FZ",
+        signed_on=D("2026-08-01"),
+        price_is_final=True,
         valid_from=D("2026-08-01"),
     )
     return sqlite_session, company, other, contract
@@ -64,12 +67,23 @@ def context(sqlite_session):
     "status,placed,signed,refusal,reason,expected",
     [
         ("placed", None, None, None, None, "act status placed requires placed_on"),
-        ("signed", D("2026-09-01"), None, None, None,
-         "act status signed requires signed_on"),
-        ("refused", D("2026-09-01"), None, D("2026-09-20"), None,
-         "act status refused requires refusal_reason"),
-        ("signed", D("2026-09-01"), D("2026-09-29"), D("2026-09-20"), "x",
-         "act cannot be both signed and refused"),
+        ("signed", D("2026-09-01"), None, None, None, "act status signed requires signed_on"),
+        (
+            "refused",
+            D("2026-09-01"),
+            None,
+            D("2026-09-20"),
+            None,
+            "act status refused requires refusal_reason",
+        ),
+        (
+            "signed",
+            D("2026-09-01"),
+            D("2026-09-29"),
+            D("2026-09-20"),
+            "x",
+            "act cannot be both signed and refused",
+        ),
     ],
 )
 def test_act_flow_error_texts(status, placed, signed, refusal, reason, expected):
@@ -104,9 +118,7 @@ def test_payment_error_texts(paid_on, paid_amount, expected):
 )
 def test_payment_term_branches(treasury, eis, override, days, basis):
     warnings = []
-    contract = SimpleNamespace(
-        treasury_account=treasury, payment_delay_days=override
-    )
+    contract = SimpleNamespace(treasury_account=treasury, payment_delay_days=override)
     assert payment_term(contract, eis, warnings) == (days, basis)
     if eis is None:
         assert UNKNOWN_EIS_WARNING in warnings
@@ -116,7 +128,8 @@ def test_long_contract_warning():
     warnings = []
     assert payment_term(
         SimpleNamespace(treasury_account=False, payment_delay_days=12),
-        True, warnings,
+        True,
+        warnings,
     ) == (12, "contract")
     assert warnings == [LONG_CONTRACT_WARNING]
 
@@ -124,8 +137,14 @@ def test_long_contract_warning():
 def test_signed_act_creates_obligation(context):
     session, company, _, contract = context
     act, obligation, warnings = create_act(
-        session, company.id, contract, "A1", M("1000000"),
-        D("2026-09-01"), signed_on=D("2026-09-29"), via_eis=True,
+        session,
+        company.id,
+        contract,
+        "A1",
+        M("1000000"),
+        D("2026-09-01"),
+        signed_on=D("2026-09-29"),
+        via_eis=True,
     )
     assert act.status == "signed" and warnings == []
     assert obligation.amount == M("1000000.00")
@@ -137,8 +156,13 @@ def test_signed_act_creates_obligation(context):
 def test_refused_act_has_no_payment(context):
     session, company, _, contract = context
     act, obligation, _ = create_act(
-        session, company.id, contract, "A1", M("100"),
-        D("2026-09-01"), refusal_on=D("2026-09-20"),
+        session,
+        company.id,
+        contract,
+        "A1",
+        M("100"),
+        D("2026-09-01"),
+        refusal_on=D("2026-09-20"),
         refusal_reason="Замечания",
     )
     assert act.status == "refused" and obligation is None
@@ -149,12 +173,21 @@ def test_duplicate_placed_or_signed_rejected(context):
     session, company, _, contract = context
     for number, signed in (("placed", None), ("signed", D("2026-09-29"))):
         create_act(
-            session, company.id, contract, number, M("100"),
-            D("2026-09-01"), signed_on=signed,
+            session,
+            company.id,
+            contract,
+            number,
+            M("100"),
+            D("2026-09-01"),
+            signed_on=signed,
         )
         with pytest.raises(DuplicateActiveVersionError):
             create_act(
-                session, company.id, contract, number, M("100"),
+                session,
+                company.id,
+                contract,
+                number,
+                M("100"),
                 D("2026-09-25"),
             )
 
@@ -162,27 +195,43 @@ def test_duplicate_placed_or_signed_rejected(context):
 def test_refusal_replacement_resets_deadline(context):
     session, company, _, contract = context
     first, _, _ = create_act(
-        session, company.id, contract, "A1", M("100"),
-        D("2026-09-01"), refusal_on=D("2026-09-20"),
+        session,
+        company.id,
+        contract,
+        "A1",
+        M("100"),
+        D("2026-09-01"),
+        refusal_on=D("2026-09-20"),
         refusal_reason="Замечания",
     )
     new, _, _ = create_act(
-        session, company.id, contract, "A1", M("100"), D("2026-09-25"),
+        session,
+        company.id,
+        contract,
+        "A1",
+        M("100"),
+        D("2026-09-25"),
     )
     assert new.id != first.id and first.superseded_by == new.id
     assert new.replace_reason == "повторное размещение после мотивированного отказа"
-    assert signing_deadline(
-        new.placed_on, DbCalendar(session).is_working
-    ) == D("2026-10-23")
+    assert signing_deadline(new.placed_on, DbCalendar(session).is_working) == D("2026-10-23")
 
 
 def test_placed_to_signed_historical_status(context):
     session, company, _, contract = context
     first, _, _ = create_act(
-        session, company.id, contract, "A1", M("1000000"), D("2026-09-01"),
+        session,
+        company.id,
+        contract,
+        "A1",
+        M("1000000"),
+        D("2026-09-01"),
     )
     signed, obligation, _ = change_act_status(
-        session, company.id, first, signed_on=D("2026-09-29"),
+        session,
+        company.id,
+        first,
+        signed_on=D("2026-09-29"),
     )
     repo = AcceptanceActRepository(session)
     assert repo.get_on_date(company.id, first.id, D("2026-09-15")).status == "placed"
@@ -194,11 +243,20 @@ def test_placed_to_signed_historical_status(context):
 def test_partial_payment_supersedes_and_rejects_second(context):
     session, company, _, contract = context
     act, obligation, _ = create_act(
-        session, company.id, contract, "A1", M("1000000"),
-        D("2026-09-01"), signed_on=D("2026-09-29"),
+        session,
+        company.id,
+        contract,
+        "A1",
+        M("1000000"),
+        D("2026-09-01"),
+        signed_on=D("2026-09-29"),
     )
     paid = register_payment(
-        session, company.id, obligation, D("2026-10-10"), M("400000"),
+        session,
+        company.id,
+        obligation,
+        D("2026-10-10"),
+        M("400000"),
     )
     assert paid.id != obligation.id
     assert obligation.superseded_by == paid.id
@@ -211,8 +269,13 @@ def test_partial_payment_supersedes_and_rejects_second(context):
 def test_tenant_isolation_new_repositories(context):
     session, company, other, contract = context
     act, obligation, _ = create_act(
-        session, company.id, contract, "A1", M("100"),
-        D("2026-09-01"), signed_on=D("2026-09-29"),
+        session,
+        company.id,
+        contract,
+        "A1",
+        M("100"),
+        D("2026-09-01"),
+        signed_on=D("2026-09-29"),
     )
     for repository, row in (
         (AcceptanceActRepository(session), act),
@@ -239,9 +302,13 @@ def test_tenant_isolation_new_repositories(context):
 def test_named_act_checks_raw(context, kind, expected):
     session, company, _, contract = context
     values = dict(
-        company_id=company.id, contract_id=contract.id, act_number="RAW",
-        amount_gross=M("100"), placed_on=D("2026-09-01"),
-        status="placed", valid_from=D("2026-09-01"),
+        company_id=company.id,
+        contract_id=contract.id,
+        act_number="RAW",
+        amount_gross=M("100"),
+        placed_on=D("2026-09-01"),
+        status="placed",
+        valid_from=D("2026-09-01"),
     )
     if kind == "placed":
         values["placed_on"] = None
@@ -271,11 +338,20 @@ def test_named_act_checks_raw(context, kind, expected):
 def test_named_payment_checks_raw(context, kind, expected):
     session, company, _, contract = context
     act, _, _ = create_act(
-        session, company.id, contract, "A1", M("100"), D("2026-09-01"),
+        session,
+        company.id,
+        contract,
+        "A1",
+        M("100"),
+        D("2026-09-01"),
     )
     values = dict(
-        company_id=company.id, act_id=act.id, amount=M("100"),
-        due_on=D("2026-10-08"), term_workdays=7, term_basis="law_eis_7",
+        company_id=company.id,
+        act_id=act.id,
+        amount=M("100"),
+        due_on=D("2026-10-08"),
+        term_workdays=7,
+        term_basis="law_eis_7",
         valid_from=D("2026-09-29"),
     )
     if kind == "pair":
@@ -300,13 +376,16 @@ def test_payment_deadline_matches_calendar(context):
 def test_act_provenance(context):
     session, company, _, contract = context
     act, obligation, _ = create_act(
-        session, company.id, contract, "A1", M("100"),
-        D("2026-09-01"), signed_on=D("2026-09-29"),
+        session,
+        company.id,
+        contract,
+        "A1",
+        M("100"),
+        D("2026-09-01"),
+        signed_on=D("2026-09-29"),
     )
     from construction_os.storage.models import ValueRefRow
 
-    refs = session.scalars(
-        select(ValueRefRow).where(ValueRefRow.company_id == company.id)
-    ).all()
+    refs = session.scalars(select(ValueRefRow).where(ValueRefRow.company_id == company.id)).all()
     assert any(r.entity_id == act.id and r.field_name == "amount_gross" for r in refs)
     assert any(r.entity_id == obligation.id and r.field_name == "due_on" for r in refs)

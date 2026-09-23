@@ -29,10 +29,13 @@ def run_penalty(args, session: Session) -> int:
         company = find_company(session, args.company)
         contract = (
             find_contract(session, company.id, args.contract_number)
-            if args.contract_number else None
+            if args.contract_number
+            else None
         )
         act = find_act(
-            session, company.id, args.act_number,
+            session,
+            company.id,
+            args.act_number,
             contract.id if contract is not None else None,
         )
         if contract is None:
@@ -42,8 +45,10 @@ def run_penalty(args, session: Session) -> int:
         if obligation is None:
             raise LookupError("нет данных: обязательство оплаты")
         result = calculate_penalty(
-            obligation.amount, obligation.due_on,
-            as_of=args.as_of, paid_on=obligation.paid_on,
+            obligation.amount,
+            obligation.due_on,
+            as_of=args.as_of,
+            paid_on=obligation.paid_on,
             paid_amount=obligation.paid_amount,
             penalty_cap_pct=contract.penalty_cap_pct,
             rate_date=args.rate_date,

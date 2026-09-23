@@ -56,9 +56,7 @@ def validate_act(
         raise ActFlowError("refusal_on before placed_on")
 
 
-def validate_payment(
-    amount: Decimal, paid_on: date | None, paid_amount: Decimal | None
-) -> None:
+def validate_payment(amount: Decimal, paid_on: date | None, paid_amount: Decimal | None) -> None:
     if paid_amount is not None and paid_on is None:
         raise ActFlowError("paid_amount requires paid_on")
     if paid_on is not None and paid_amount is None:
@@ -110,7 +108,11 @@ def _create_obligation(session, company_id, act, contract, actor):
         valid_from=act.signed_on,
     )
     _refs(
-        session, company_id, "payment_obligations", row.id, source.id,
+        session,
+        company_id,
+        "payment_obligations",
+        row.id,
+        source.id,
         ("due_on", "term_workdays", "term_basis", "amount"),
     )
     session.flush()
@@ -135,8 +137,8 @@ def create_act(
     actor: str = "cli",
 ):
     """Create an act or re-place a refused act; caller owns the transaction."""
-    status = "signed" if signed_on is not None else (
-        "refused" if refusal_on is not None else "placed"
+    status = (
+        "signed" if signed_on is not None else ("refused" if refusal_on is not None else "placed")
     )
     validate_act(status, placed_on, signed_on, refusal_on, refusal_reason)
     if amount_gross <= 0:
@@ -144,9 +146,7 @@ def create_act(
     if contract.company_id != company_id:
         raise PermissionError("company mismatch")
     repo = AcceptanceActRepository(session)
-    active = repo.list_current(
-        company_id, contract_id=contract.id, act_number=act_number
-    )
+    active = repo.list_current(company_id, contract_id=contract.id, act_number=act_number)
     source = _source(session, company_id, SourceType.USER_INPUT, actor)
     values = dict(
         contract_id=contract.id,
@@ -179,15 +179,26 @@ def create_act(
     else:
         act = repo.add(company_id, **values, valid_from=placed_on)
     _refs(
-        session, company_id, "acceptance_acts", act.id, source.id,
-        ("act_number", "amount_gross", "placed_on", "signed_on", "refusal_on",
-         "refusal_reason", "via_eis", "period_from", "period_to"),
+        session,
+        company_id,
+        "acceptance_acts",
+        act.id,
+        source.id,
+        (
+            "act_number",
+            "amount_gross",
+            "placed_on",
+            "signed_on",
+            "refusal_on",
+            "refusal_reason",
+            "via_eis",
+            "period_from",
+            "period_to",
+        ),
     )
     obligation, warnings = (None, [])
     if status == "signed":
-        obligation, warnings = _create_obligation(
-            session, company_id, act, contract, actor
-        )
+        obligation, warnings = _create_obligation(session, company_id, act, contract, actor)
     session.flush()
     return act, obligation, warnings
 
@@ -223,15 +234,17 @@ def change_act_status(
         effective_on,
     )
     _refs(
-        session, company_id, "acceptance_acts", new.id, source.id,
+        session,
+        company_id,
+        "acceptance_acts",
+        new.id,
+        source.id,
         ("status", "signed_on", "refusal_on", "refusal_reason"),
     )
     obligation, warnings = (None, [])
     if status == "signed":
         contract = session.get(ContractRow, act.contract_id)
-        obligation, warnings = _create_obligation(
-            session, company_id, new, contract, actor
-        )
+        obligation, warnings = _create_obligation(session, company_id, new, contract, actor)
     session.flush()
     return new, obligation, warnings
 
@@ -264,7 +277,11 @@ def register_payment(
         paid_on,
     )
     _refs(
-        session, company_id, "payment_obligations", new.id, source.id,
+        session,
+        company_id,
+        "payment_obligations",
+        new.id,
+        source.id,
         ("paid_on", "paid_amount"),
     )
     session.flush()

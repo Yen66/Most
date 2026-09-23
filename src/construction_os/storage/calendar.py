@@ -13,9 +13,7 @@ class DbCalendar:
         self.session = session
 
     def day(self, day: date) -> WorkCalendarRow:
-        row = self.session.scalar(
-            select(WorkCalendarRow).where(WorkCalendarRow.cal_date == day)
-        )
+        row = self.session.scalar(select(WorkCalendarRow).where(WorkCalendarRow.cal_date == day))
         if row is None:
             raise CalendarNotCoveredError(f"calendar has no data for {day}")
         return row

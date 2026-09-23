@@ -10,10 +10,10 @@ from construction_os.calc import (
     max_price_reduction,
     min_revenue_for_margin,
 )
-from construction_os.references import RateType, get_rate
 from construction_os.calc.acts import payment_deadline, signing_deadline
 from construction_os.calc.penalty import calculate_penalty
 from construction_os.domain.calendar import CalendarNotCoveredError, add_working_days
+from construction_os.references import RateType, get_rate
 from construction_os.references.calendar_seed import iter_calendar_days
 from construction_os.references.rates import RateNotFoundError
 
@@ -113,7 +113,6 @@ def render():
     return "\n".join(lines) + "\n"
 
 
-
 def render_new_sections():
     """All values below are calculated by production functions, not copied formulas."""
     days = [*iter_calendar_days(2026), *iter_calendar_days(2027)]
@@ -149,11 +148,21 @@ def render_new_sections():
         lines.append(f"| {name} | {start} | {n} | {add_working_days(start, n, working)} |")
     lines += ["", "## Ключевая ставка", "", "| Дата | Ставка |", "|---|---:|"]
     boundaries = (
-        date(2024, 10, 27), date(2024, 10, 28), date(2025, 12, 31),
-        date(2026, 2, 15), date(2026, 2, 16), date(2026, 3, 22),
-        date(2026, 3, 23), date(2026, 4, 26), date(2026, 4, 27),
-        date(2026, 6, 21), date(2026, 6, 22), date(2026, 7, 26),
-        date(2026, 7, 27), date(2026, 8, 1), date(2026, 9, 23),
+        date(2024, 10, 27),
+        date(2024, 10, 28),
+        date(2025, 12, 31),
+        date(2026, 2, 15),
+        date(2026, 2, 16),
+        date(2026, 3, 22),
+        date(2026, 3, 23),
+        date(2026, 4, 26),
+        date(2026, 4, 27),
+        date(2026, 6, 21),
+        date(2026, 6, 22),
+        date(2026, 7, 26),
+        date(2026, 7, 27),
+        date(2026, 8, 1),
+        date(2026, 9, 23),
     )
     for day in boundaries:
         try:
@@ -169,32 +178,46 @@ def render_new_sections():
     p1 = calculate_penalty(amount, due_eis, as_of=date(2026, 10, 28))
     p2 = calculate_penalty(amount, due_treasury, as_of=date(2026, 10, 28))
     p3 = calculate_penalty(
-        amount, date(2026, 6, 15), paid_on=date(2026, 8, 15),
-        paid_amount=amount, as_of=date(2026, 8, 20),
+        amount,
+        date(2026, 6, 15),
+        paid_on=date(2026, 8, 15),
+        paid_amount=amount,
+        as_of=date(2026, 8, 20),
     )
     p4 = calculate_penalty(
-        amount, date(2026, 1, 5), as_of=date(2026, 7, 24),
+        amount,
+        date(2026, 1, 5),
+        as_of=date(2026, 7, 24),
         penalty_cap_pct=D("0.05"),
     )
     p5 = calculate_penalty(
-        amount, date(2026, 9, 10), paid_on=date(2026, 9, 30),
-        paid_amount=D("400000"), as_of=date(2026, 10, 20),
+        amount,
+        date(2026, 9, 10),
+        paid_on=date(2026, 9, 30),
+        paid_amount=D("400000"),
+        as_of=date(2026, 10, 20),
     )
     p6 = calculate_penalty(
-        amount, date(2026, 9, 10), paid_on=date(2026, 9, 10),
-        paid_amount=amount, as_of=date(2026, 9, 20),
+        amount,
+        date(2026, 9, 10),
+        paid_on=date(2026, 9, 10),
+        paid_amount=amount,
+        as_of=date(2026, 9, 20),
     )
     p7a = calculate_penalty(
-        D("7300000"), date(2026, 9, 10), as_of=date(2026, 9, 20),
+        D("7300000"),
+        date(2026, 9, 10),
+        as_of=date(2026, 9, 20),
     )
     p7b = calculate_penalty(
-        D("7300000"), date(2026, 9, 10), as_of=date(2026, 9, 30),
+        D("7300000"),
+        date(2026, 9, 10),
+        as_of=date(2026, 9, 30),
     )
     lines += [
         f"| P1 | подписан {signed}; due {due_eis}; {p1.days} дн.; "
         f"{p(p1.rate_used * D('100'))} | {m(p1.total)} |",
-        f"| P2 | due {due_treasury}; {p2.days} дн.; "
-        f"{p(p2.rate_used * D('100'))} | {m(p2.total)} |",
+        f"| P2 | due {due_treasury}; {p2.days} дн.; {p(p2.rate_used * D('100'))} | {m(p2.total)} |",
         f"| P3 | {p3.days} дн.; ставка на дату оплаты "
         f"{p(p3.rate_used * D('100'))} | {m(p3.total)} |",
         f"| P4 | {p4.days} дн.; без потолка {m(p4.total_uncapped)}; "
@@ -208,6 +231,7 @@ def render_new_sections():
         f"{signing_deadline(date(2026, 9, 25), working)} | — |",
     ]
     return "\n".join(lines) + "\n"
+
 
 def main():
     print(render() + render_new_sections(), end="")
