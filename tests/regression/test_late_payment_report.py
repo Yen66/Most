@@ -24,22 +24,43 @@ def test_late_full_payment_is_reported_as_late(tmp_path, monkeypatch, capsys):
         session.add(company)
         session.flush()
         contract = ContractRepository(session).add(
-            company.id, contract_type="government", number="N",
-            signed_on=date(2026, 8, 1), price_is_final=True,
+            company.id,
+            contract_type="government",
+            number="N",
+            signed_on=date(2026, 8, 1),
+            price_is_final=True,
             valid_from=date(2026, 8, 1),
         )
         _act, obligation, _ = create_act(
-            session, company.id, contract, "LATE", Decimal("1000000"),
-            date(2026, 9, 1), signed_on=date(2026, 9, 29),
+            session,
+            company.id,
+            contract,
+            "LATE",
+            Decimal("1000000"),
+            date(2026, 9, 1),
+            signed_on=date(2026, 9, 29),
         )
         register_payment(
-            session, company.id, obligation,
-            date(2026, 10, 28), Decimal("1000000"),
+            session,
+            company.id,
+            obligation,
+            date(2026, 10, 28),
+            Decimal("1000000"),
         )
         session.commit()
-    assert main([
-        "acts", "report", "--company", "Late Co", "--as-of", "2026-10-28",
-    ]) == 0
+    assert (
+        main(
+            [
+                "acts",
+                "report",
+                "--company",
+                "Late Co",
+                "--as-of",
+                "2026-10-28",
+            ]
+        )
+        == 0
+    )
     output = capsys.readouterr().out
     assert "просрочка=да" in output
     assert "Пеня: 9333.33" in output

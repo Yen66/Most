@@ -182,9 +182,8 @@ def run_acts(args, session) -> int:
             for warning in penalty.warnings:
                 print(f"ПРЕДУПРЕЖДЕНИЕ: {warning}")
             overdue = (
-                (obligation.paid_on is not None and obligation.paid_on > obligation.due_on)
-                or (args.as_of > obligation.due_on and paid < obligation.amount)
-            )
+                obligation.paid_on is not None and obligation.paid_on > obligation.due_on
+            ) or (args.as_of > obligation.due_on and paid < obligation.amount)
             print(
                 f"Оплата: due_on={obligation.due_on}; basis={obligation.term_basis}; "
                 f"оплачено={money(paid)}; осталось={money(obligation.amount - paid)}; "
