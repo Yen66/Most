@@ -1,0 +1,30 @@
+name: Temporary Ruff formatter (INGESTION-1)
+on:
+  push:
+    branches: [feat/ingestion]
+permissions:
+  contents: write
+jobs:
+  format:
+    if: "!contains(github.event.head_commit.message, 'chore: ruff format via temporary workflow')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/ingestion
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Format and apply only safe lint fixes
+        run: |
+          python -m pip install ruff==0.13.2
+          ruff format .
+          ruff check --fix . || true
+          git add -u
+          if ! git diff --cached --quiet; then
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "chore: ruff format via temporary workflow"
+            git push origin HEAD:feat/ingestion
+          fi
+          ruff format --check .
+          ruff check .
