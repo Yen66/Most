@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from datetime import date
 from types import SimpleNamespace
 
@@ -24,9 +26,7 @@ def _files(fixtures_dir):
 
 
 def test_batch_four_reference_values(sqlite_session, fixtures_dir):
-    receipt = intake_batch(
-        sqlite_session, "Подрядчик", _files(fixtures_dir), date(2026, 9, 20)
-    )
+    receipt = intake_batch(sqlite_session, "Подрядчик", _files(fixtures_dir), date(2026, 9, 20))
     assert receipt["summary"] == {
         "imported": 4,
         "skipped": 0,
@@ -86,8 +86,12 @@ def test_structure_not_filename(sqlite_session, fixtures_dir, tmp_path):
     assert receipt["summary"]["imported"] == 1
 
 
-def test_shifted_header(sqlite_session, fixtures_dir):
-    shifted = fixtures_dir / "vor_object_a_shifted_2.xlsx"
+def test_shifted_header(sqlite_session, tmp_path):
+    subprocess.run(
+        [sys.executable, "scripts/make_fixtures.py", "--out", str(tmp_path), "--shift-header", "2"],
+        check=True,
+    )
+    shifted = tmp_path / "vor_object_a_shifted_2.xlsx"
     receipt = intake_batch(sqlite_session, "A", [shifted], date(2026, 9, 20))
     assert receipt["files"][0]["positions"] == 29
     assert receipt["files"][0]["type"] == "vor"
@@ -95,9 +99,7 @@ def test_shifted_header(sqlite_session, fixtures_dir):
 
 def test_json_receipt_matches_stdout(sqlite_session, fixtures_dir, tmp_path, capsys):
     path = tmp_path / "receipt.json"
-    args = SimpleNamespace(
-        company="A", files=[str(_files(fixtures_dir)[0])], report=str(path)
-    )
+    args = SimpleNamespace(company="A", files=[str(_files(fixtures_dir)[0])], report=str(path))
     assert run_intake(args, sqlite_session) == 0
     receipt = json.loads(path.read_text(encoding="utf-8"))
     stdout = capsys.readouterr().out
@@ -126,7 +128,21 @@ def test_cost_sheet_before_vor(sqlite_session, fixtures_dir, tmp_path):
     make_template(path)
     book = load_workbook(path)
     book["Затраты"].append(
-        ["vor_object_a", None, "MAT", None, None, None, 100, "fixed", None, "net", None, None, None]
+        [
+            "vor_object_a",
+            None,
+            "MAT",
+            None,
+            None,
+            None,
+            100,
+            "fixed",
+            None,
+            "net",
+            None,
+            None,
+            None,
+        ]
     )
     book.save(path)
     receipt = intake_batch(sqlite_session, "A", [path, _files(fixtures_dir)[0]])
