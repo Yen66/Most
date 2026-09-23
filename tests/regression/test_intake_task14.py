@@ -127,30 +127,15 @@ def test_cost_sheet_before_vor(sqlite_session, fixtures_dir, tmp_path):
     from construction_os.storage.models import CostArticleRow, CostEntryRow
 
     for index, (code, category, name) in enumerate(DEFAULT_COST_ARTICLES, 1):
-        sqlite_session.add(
-            CostArticleRow(code=code, category=category, name=name, sort_order=index)
-        )
+        article = CostArticleRow(code=code, category=category, name=name, sort_order=index)
+        sqlite_session.add(article)
     sqlite_session.flush()
     path = tmp_path / "costs.xlsx"
     make_template(path)
     book = load_workbook(path)
-    book["Затраты"].append(
-        [
-            "vor_object_a",
-            None,
-            "MAT",
-            None,
-            None,
-            None,
-            100,
-            "fixed",
-            None,
-            "net",
-            None,
-            None,
-            None,
-        ]
-    )
+    row = ["vor_object_a", None, "MAT", None, None, None]
+    row += [100, "fixed", None, "net", None, None, None]
+    book["Затраты"].append(row)
     book.save(path)
     receipt = intake_batch(sqlite_session, "A", [path, _files(fixtures_dir)[0]])
     assert receipt["summary"]["imported"] == 2
