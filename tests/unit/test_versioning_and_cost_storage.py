@@ -38,8 +38,8 @@ def seed(session):
     return c, src
 
 
-def test_schema_has_15_tables():
-    assert len(Base.metadata.tables) == 15
+def test_schema_has_18_tables():
+    assert len(Base.metadata.tables) == 18
 
 
 def test_contract_new_fields_types():
@@ -52,7 +52,7 @@ def test_contract_new_fields_types():
 
 
 @pytest.mark.parametrize(
-    "table", ["contracts", "objects", "work_items", "schedule_tasks", "cost_entries", "scenarios"]
+    "table", ["contracts", "objects", "work_items", "schedule_tasks", "cost_entries", "scenarios", "acceptance_acts", "payment_obligations"]
 )
 def test_versioned_tables_have_four_fields(table):
     assert {"valid_from", "valid_to", "superseded_by", "replace_reason"} <= set(

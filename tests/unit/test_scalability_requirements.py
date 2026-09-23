@@ -23,12 +23,14 @@ from construction_os.references import (
 )
 from construction_os.storage.models import (
     Base,
+    AcceptanceActRow,
     CompanyRow,
     ContractRow,
     CostArticleRow,
     CostEntryRow,
     DocumentRow,
     ObjectRow,
+    PaymentObligationRow,
     ScenarioParamRow,
     ScenarioRow,
     ScheduleNoteRow,
@@ -40,13 +42,13 @@ from construction_os.storage.models import (
 )
 from construction_os.storage.repositories import (
     TENANT_REPOSITORIES,
+    EXCLUDED_TABLES,
     ImmutableRecordError,
     WorkItemRepository,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-EXCLUDED_TABLES = {"companies", "reference_rates", "cost_articles"}
-FORBIDDEN_RATES = {0.20, 0.22, 1.22, 0.25, 0.30, 0.14, 0.027, 1.25, 0.75, 0.03, 0.87}
+FORBIDDEN_RATES = {0.20, 0.22, 1.22, 0.25, 0.30, 0.14, 0.027, 1.25, 0.75, 0.03, 0.87, 0.21, 0.18, 0.17, 0.165, 0.16, 0.155, 0.15, 0.145, 0.1425}
 
 
 def _seed_tenant_rows(session, company_name: str):
@@ -150,6 +152,29 @@ def _seed_tenant_rows(session, company_name: str):
     )
     session.add_all([cost, scenario])
     session.flush()
+    act = AcceptanceActRow(
+        company_id=company.id,
+        contract_id=contract.id,
+        act_number=f"ACT-{company_name}",
+        amount_gross=Decimal("1"),
+        placed_on=date(2026, 1, 1),
+        signed_on=date(2026, 1, 12),
+        status="signed",
+        valid_from=date(2026, 1, 1),
+    )
+    session.add(act)
+    session.flush()
+    obligation = PaymentObligationRow(
+        company_id=company.id,
+        act_id=act.id,
+        amount=Decimal("1"),
+        due_on=date(2026, 1, 21),
+        term_workdays=7,
+        term_basis="law_eis_7",
+        valid_from=date(2026, 1, 12),
+    )
+    session.add(obligation)
+    session.flush()
     param = ScenarioParamRow(
         company_id=company.id,
         scenario_id=scenario.id,
@@ -175,6 +200,8 @@ def _seed_tenant_rows(session, company_name: str):
             cost,
             scenario,
             param,
+            act,
+            obligation,
         )
     }
     return company, rows
@@ -256,6 +283,8 @@ def test_M03_values_are_superseded_not_updated(sqlite_session):
         "schedule_tasks",
         "cost_entries",
         "scenarios",
+        "acceptance_acts",
+        "payment_obligations",
     ):
         assert {"valid_from", "valid_to", "superseded_by", "replace_reason"} <= set(
             Base.metadata.tables[table_name].c.keys()

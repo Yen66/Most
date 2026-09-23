@@ -124,6 +124,7 @@ class ContractRow(Base):
     security_amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
     warranty_retention_pct: Mapped[Decimal | None] = mapped_column(Numeric(9, 4))
     treasury_account: Mapped[bool | None] = mapped_column(Boolean)
+    penalty_cap_pct: Mapped[Decimal | None] = mapped_column(Numeric(9, 6))
     currency: Mapped[str] = mapped_column(String(3), default="RUB", nullable=False)
     vat_rate_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("reference_rates.id"))
     valid_from: Mapped[date] = mapped_column(Date, nullable=False, default=date.today)
@@ -398,3 +399,112 @@ class WorkCalendarRow(Base):
     day_type: Mapped[str] = mapped_column(Text, nullable=False)
     is_shortened: Mapped[bool] = mapped_column(Boolean, nullable=False)
     source: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class AcceptanceActRow(Base):
+    __tablename__ = "acceptance_acts"
+    __table_args__ = (
+        CheckConstraint("amount_gross > 0", name="ck_acts_amount_positive"),
+        CheckConstraint("status IN ('placed','signed','refused')", name="ck_acts_status"),
+        CheckConstraint(
+            "status <> 'placed' OR placed_on IS NOT NULL",
+            name="ck_acts_status_requires_placed_on",
+        ),
+        CheckConstraint(
+            "status <> 'signed' OR (signed_on IS NOT NULL AND placed_on IS NOT NULL)",
+            name="ck_acts_status_requires_signed_on",
+        ),
+        CheckConstraint(
+            "status <> 'refused' OR (refusal_on IS NOT NULL AND refusal_reason IS NOT NULL)",
+            name="ck_acts_status_requires_refusal",
+        ),
+        CheckConstraint(
+            "NOT (signed_on IS NOT NULL AND refusal_on IS NOT NULL)",
+            name="ck_acts_not_signed_and_refused",
+        ),
+        CheckConstraint(
+            "signed_on IS NULL OR placed_on IS NULL OR signed_on >= placed_on",
+            name="ck_acts_signed_after_placed",
+        ),
+        CheckConstraint(
+            "refusal_on IS NULL OR placed_on IS NULL OR refusal_on >= placed_on",
+            name="ck_acts_refusal_after_placed",
+        ),
+        Index(
+            "uq_acceptance_act_current", "company_id", "contract_id", "act_number",
+            unique=True,
+            postgresql_where=column("valid_to").is_(None),
+            sqlite_where=column("valid_to").is_(None),
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
+    contract_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("contracts.id"), nullable=False, index=True
+    )
+    object_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("objects.id"))
+    act_number: Mapped[str] = mapped_column(Text, nullable=False)
+    period_from: Mapped[date | None] = mapped_column(Date)
+    period_to: Mapped[date | None] = mapped_column(Date)
+    amount_gross: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    vat_rate_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("reference_rates.id"))
+    via_eis: Mapped[bool | None] = mapped_column(Boolean)
+    placed_on: Mapped[date | None] = mapped_column(Date)
+    signed_on: Mapped[date | None] = mapped_column(Date)
+    refusal_on: Mapped[date | None] = mapped_column(Date)
+    refusal_reason: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    valid_from: Mapped[date] = mapped_column(Date, nullable=False)
+    valid_to: Mapped[date | None] = mapped_column(Date)
+    superseded_by: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("acceptance_acts.id")
+    )
+    replace_reason: Mapped[str | None] = mapped_column(Text)
+
+
+class PaymentObligationRow(Base):
+    __tablename__ = "payment_obligations"
+    __table_args__ = (
+        CheckConstraint("amount > 0", name="ck_pay_obl_amount_positive"),
+        CheckConstraint("term_workdays > 0", name="ck_pay_obl_term_positive"),
+        CheckConstraint(
+            "term_basis IN ('law_eis_7','law_treasury_10','law_non_eis_10','contract')",
+            name="ck_pay_obl_term_basis",
+        ),
+        CheckConstraint(
+            "(paid_on IS NULL AND paid_amount IS NULL) OR "
+            "(paid_on IS NOT NULL AND paid_amount IS NOT NULL)",
+            name="ck_pay_obl_paid_pair",
+        ),
+        CheckConstraint(
+            "paid_amount IS NULL OR (paid_amount > 0 AND paid_amount <= amount)",
+            name="ck_pay_obl_paid_range",
+        ),
+        Index(
+            "uq_payment_obligation_current", "company_id", "act_id",
+            unique=True,
+            postgresql_where=column("valid_to").is_(None),
+            sqlite_where=column("valid_to").is_(None),
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
+    act_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("acceptance_acts.id"), nullable=False, index=True
+    )
+    amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    due_on: Mapped[date] = mapped_column(Date, nullable=False)
+    term_workdays: Mapped[int] = mapped_column(Integer, nullable=False)
+    term_basis: Mapped[str] = mapped_column(Text, nullable=False)
+    paid_on: Mapped[date | None] = mapped_column(Date)
+    paid_amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    valid_from: Mapped[date] = mapped_column(Date, nullable=False)
+    valid_to: Mapped[date | None] = mapped_column(Date)
+    superseded_by: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("payment_obligations.id")
+    )
+    replace_reason: Mapped[str | None] = mapped_column(Text)

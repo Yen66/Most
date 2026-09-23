@@ -8,12 +8,14 @@ from uuid import UUID
 from sqlalchemy import select, text
 
 from .models import (
+    AcceptanceActRow,
     CompanyRow,
     ContractRow,
     CostArticleRow,
     CostEntryRow,
     DocumentRow,
     ObjectRow,
+    PaymentObligationRow,
     ReferenceRateRow,
     ScenarioParamRow,
     ScenarioRow,
@@ -294,11 +296,23 @@ EXCLUDED_TABLES = frozenset(
 )
 
 
+class AcceptanceActRepository(BaseRepository):
+    model = AcceptanceActRow
+    business_key = ("contract_id", "act_number")
+
+
+class PaymentObligationRepository(BaseRepository):
+    model = PaymentObligationRow
+    business_key = ("act_id",)
+
+
 TENANT_REPOSITORIES = (
     DocumentRepository,
     ValueSourceRepository,
     ValueRefRepository,
     ContractRepository,
+    AcceptanceActRepository,
+    PaymentObligationRepository,
     ObjectRepository,
     WorkItemRepository,
     ScheduleTaskRepository,

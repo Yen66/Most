@@ -33,6 +33,10 @@ jobs:
           DATABASE_URL=sqlite:///construction_os.db construction-os cost-report --company "Demo Co" --object "Demo Object" --date 2026-09-20
           DATABASE_URL=sqlite:///construction_os.db construction-os breakeven --company "Demo Co" --object "Demo Object" --date 2026-09-20
           DATABASE_URL=sqlite:///construction_os.db construction-os scenario --company "Demo Co" --object "Demo Object" --date 2026-09-20 --name "MAT +10" --cost-multiplier 1.10 --scope cost_item --scope-value MAT
+          DATABASE_URL=sqlite:///construction_os.db python scripts/seed_acts_demo.py
+          DATABASE_URL=sqlite:///construction_os.db construction-os acts add --company "Demo Co" --contract-number "ДЕМО-АКТ-2026" --act-number "ДЕМО-4" --amount-gross 1000 --placed-on 2026-09-01 --signed-on 2026-09-29 --via-eis
+          DATABASE_URL=sqlite:///construction_os.db construction-os acts pay --company "Demo Co" --contract-number "ДЕМО-АКТ-2026" --act-number "ДЕМО-4" --paid-on 2026-10-08 --amount 1000
+          DATABASE_URL=sqlite:///construction_os.db construction-os acts report --company "Demo Co" --as-of 2026-10-28
           pytest --collect-only -q | tail -1
           find src tests scripts -name '*.py' | xargs wc -l | tail -1
           python - <<'PY'
