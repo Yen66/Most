@@ -42,3 +42,8 @@ Immutable-дочерняя таблица без полей версии: `param
 ## cash_flows (миграция 0005)
 
 Tenant-таблица: `id UUID PK`, `company_id UUID FK NOT NULL INDEX`, `contract_id UUID FK NULL`, `object_id UUID FK NULL`, `flow_date DATE NOT NULL`, `direction TEXT inflow|outflow`, `amount NUMERIC(18,2) > 0`, `category TEXT`, `plan_or_fact TEXT plan|fact`, `source_kind TEXT NULL`, `source_id UUID NULL`, `note TEXT NULL`, `valid_from DATE NOT NULL`, `valid_to DATE NULL`, `superseded_by UUID FK NULL`, `replace_reason TEXT NULL`. Именованные CHECK: `ck_cash_flow_direction`, `ck_cash_flow_amount_positive`, `ck_cash_flow_plan_fact`, `ck_cash_flow_source_pair`. Частичный уникальный индекс `uq_cash_flow_source_current(company_id,source_kind,source_id)` для активных автопотоков в SQLite и PostgreSQL. Ручные потоки допускают дубли. Provenance ручных сумм: `value_sources` и `value_refs`; автопоток дополнительно ссылается на версию `payment_obligations`. PostgreSQL immutable trigger, исправление через supersede.
+
+
+## Артефакт intake (новых таблиц нет)
+
+JSON-квитанция — внешний артефакт, не новая таблица: files[] с полями file, sha256, type, action (imported|skipped|rejected), positions, total_gross, objects[], warnings[], errors[]; summary содержит imported, skipped, rejected, portfolio_gross, portfolio_net. Provenance сохраняется существующими импортёрами в documents, value_sources, value_refs. Повторный sha256 — успешный skipped; неизвестные форматы — rejected.
