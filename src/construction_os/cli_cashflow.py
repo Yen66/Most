@@ -1,4 +1,5 @@
 """CLI cash-flow build, manual input and dated gap reporting."""
+
 from __future__ import annotations
 
 from datetime import date
@@ -22,9 +23,7 @@ from construction_os.storage.models import CashFlowRow, ContractRow, PaymentObli
 
 
 def configure_cashflow(sub) -> None:
-    commands = sub.add_parser("cash-flow").add_subparsers(
-        dest="cashflow_command", required=True
-    )
+    commands = sub.add_parser("cash-flow").add_subparsers(dest="cashflow_command", required=True)
     p = commands.add_parser("build")
     p.add_argument("--company", required=True)
     p.add_argument("--contract-number")
@@ -50,9 +49,7 @@ def run_cashflow(args, session) -> int:
     try:
         company = find_company(session, args.company)
         if args.cashflow_command == "build":
-            result = build_cash_flows(
-                session, args.company, args.contract_number, args.actor
-            )
+            result = build_cash_flows(session, args.company, args.contract_number, args.actor)
             session.commit()
             print(f"создано: {result.created}, существует: {result.existed}")
             for warning in result.warnings:
@@ -61,14 +58,20 @@ def run_cashflow(args, session) -> int:
         if args.cashflow_command == "add":
             contract = (
                 find_contract(session, company.id, args.contract_number)
-                if args.contract_number else None
+                if args.contract_number
+                else None
             )
             row = add_manual_flow(
-                session, company.id, args.date,
+                session,
+                company.id,
+                args.date,
                 "inflow" if args.direction == "in" else "outflow",
-                args.amount, args.category,
+                args.amount,
+                args.category,
                 contract_id=contract.id if contract else None,
-                note=args.note, force_plan=args.plan, actor=args.actor,
+                note=args.note,
+                force_plan=args.plan,
+                actor=args.actor,
             )
             session.commit()
             print(f"Добавлен поток {row.id}: {row.flow_date} {row.direction} {money(row.amount)}")
@@ -80,9 +83,11 @@ def run_cashflow(args, session) -> int:
         )
         if ids is not None:
             query = query.where(CashFlowRow.contract_id.in_(ids))
-        rows = list(session.scalars(query.order_by(
-            CashFlowRow.flow_date, CashFlowRow.direction, CashFlowRow.id
-        )))
+        rows = list(
+            session.scalars(
+                query.order_by(CashFlowRow.flow_date, CashFlowRow.direction, CashFlowRow.id)
+            )
+        )
         print(f"Денежные потоки: {company.name}; as_of={args.as_of}")
         if not rows:
             print("нет данных")
@@ -93,14 +98,18 @@ def run_cashflow(args, session) -> int:
         flows = []
         for row in rows:
             status = row.plan_or_fact
-            if row.source_kind is None and not manual_plan_override(
-                session, company.id, row.id
-            ):
+            if row.source_kind is None and not manual_plan_override(session, company.id, row.id):
                 status = "fact" if row.flow_date <= args.as_of else "plan"
-            flows.append(Flow(
-                row.flow_date, row.direction, row.amount, row.category,
-                status, row.source_kind,
-            ))
+            flows.append(
+                Flow(
+                    row.flow_date,
+                    row.direction,
+                    row.amount,
+                    row.category,
+                    status,
+                    row.source_kind,
+                )
+            )
         inside = [f for f in flows if f.flow_date <= args.as_of]
         future = [f for f in flows if f.flow_date > args.as_of]
         print("Дата | направление | сумма | категория | план/факт | источник")
@@ -117,7 +126,9 @@ def run_cashflow(args, session) -> int:
         if not future:
             print("нет")
         for flow in future:
-            print(f"{flow.flow_date} | {flow.direction} | {flow.amount:.2f} | {flow.category} | plan")
+            print(
+                f"{flow.flow_date} | {flow.direction} | {flow.amount:.2f} | {flow.category} | plan"
+            )
         print("## КАССОВЫЙ РАЗРЫВ")
         print(f"Первый минус: {gap.first_negative_date or 'нет'}")
         print(
@@ -127,9 +138,8 @@ def run_cashflow(args, session) -> int:
         print(f"Дней в минусе: {gap.deficit_days}")
         print(
             f"Выход в плюс: {gap.recovered_date}"
-            if gap.recovered_date is not None else (
-                f"не закрыт к {args.as_of}" if gap.deficit_days else "разрыва нет"
-            )
+            if gap.recovered_date is not None
+            else (f"не закрыт к {args.as_of}" if gap.deficit_days else "разрыва нет")
         )
         if args.rate is None:
             selected = get_rate(RateType.KEY_RATE, args.as_of)
@@ -156,9 +166,7 @@ def run_cashflow(args, session) -> int:
                 obligation = session.get(PaymentObligationRow, row.source_id)
                 if obligation is not None:
                     withheld = money(obligation.amount - row.amount)
-                    warnings.append(
-                        f"гарантийное удержание {withheld} — дата возврата неизвестна"
-                    )
+                    warnings.append(f"гарантийное удержание {withheld} — дата возврата неизвестна")
         if not warnings:
             print("нет")
         for warning in dict.fromkeys(warnings):

@@ -1,4 +1,5 @@
 """Deterministic calendar-day cash-flow arithmetic, without persistence."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

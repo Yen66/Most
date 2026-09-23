@@ -28,13 +28,9 @@ def upgrade() -> None:
         sa.Column("valid_to", sa.Date()),
         sa.Column("superseded_by", sa.Uuid(), sa.ForeignKey("cash_flows.id")),
         sa.Column("replace_reason", sa.Text()),
-        sa.CheckConstraint(
-            "direction IN ('inflow','outflow')", name="ck_cash_flow_direction"
-        ),
+        sa.CheckConstraint("direction IN ('inflow','outflow')", name="ck_cash_flow_direction"),
         sa.CheckConstraint("amount > 0", name="ck_cash_flow_amount_positive"),
-        sa.CheckConstraint(
-            "plan_or_fact IN ('plan','fact')", name="ck_cash_flow_plan_fact"
-        ),
+        sa.CheckConstraint("plan_or_fact IN ('plan','fact')", name="ck_cash_flow_plan_fact"),
         sa.CheckConstraint(
             "(source_kind IS NULL AND source_id IS NULL) OR "
             "(source_kind IS NOT NULL AND source_id IS NOT NULL)",

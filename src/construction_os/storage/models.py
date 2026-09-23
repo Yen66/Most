@@ -513,6 +513,7 @@ class PaymentObligationRow(Base):
 
 class CashFlowRow(Base):
     """Versioned signed-direction flow; the monetary amount is always positive."""
+
     __tablename__ = "cash_flows"
     __table_args__ = (
         CheckConstraint("direction IN ('inflow','outflow')", name="ck_cash_flow_direction"),
@@ -525,12 +526,12 @@ class CashFlowRow(Base):
         ),
         Index(
             "uq_cash_flow_source_current",
-            "company_id", "source_kind", "source_id",
+            "company_id",
+            "source_kind",
+            "source_id",
             unique=True,
-            postgresql_where=column("valid_to").is_(None)
-            & column("source_kind").is_not(None),
-            sqlite_where=column("valid_to").is_(None)
-            & column("source_kind").is_not(None),
+            postgresql_where=column("valid_to").is_(None) & column("source_kind").is_not(None),
+            sqlite_where=column("valid_to").is_(None) & column("source_kind").is_not(None),
         ),
     )
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)

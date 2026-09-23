@@ -10,7 +10,12 @@ from construction_os.cli import main
 from construction_os.references.cost_articles import DEFAULT_COST_ARTICLES
 from construction_os.storage import Base, make_engine
 from construction_os.storage.models import (
-    CompanyRow, CostArticleRow, CostEntryRow, ObjectRow, ValueSourceRow, WorkItemRow,
+    CompanyRow,
+    CostArticleRow,
+    CostEntryRow,
+    ObjectRow,
+    ValueSourceRow,
+    WorkItemRow,
 )
 
 D = Decimal
@@ -23,47 +28,78 @@ def setup_db(tmp_path, monkeypatch):
     Base.metadata.create_all(engine)
     with Session(engine) as session:
         for i, (code, cat, name) in enumerate(DEFAULT_COST_ARTICLES, 1):
-            session.add(CostArticleRow(
-                code=code, category=cat, name=name, is_active=True, sort_order=i,
-            ))
+            session.add(
+                CostArticleRow(
+                    code=code,
+                    category=cat,
+                    name=name,
+                    is_active=True,
+                    sort_order=i,
+                )
+            )
         company = CompanyRow(name="Demo Co")
         session.add(company)
         session.flush()
-        src = ValueSourceRow(
-            company_id=company.id, source_type="user_input", confidence="exact"
-        )
+        src = ValueSourceRow(company_id=company.id, source_type="user_input", confidence="exact")
         session.add(src)
         session.flush()
         obj = ObjectRow(
-            company_id=company.id, name="Demo Object",
+            company_id=company.id,
+            name="Demo Object",
             valid_from=date(2026, 9, 20),
         )
         session.add(obj)
         session.flush()
-        session.add(WorkItemRow(
-            company_id=company.id, object_id=obj.id, position_no=1,
-            name="Demo", unit="шт", quantity=D("1"),
-            price_gross=D("1220000"), amount_gross=D("1220000"),
-            vat_rate=D("0.22"), source_id=src.id,
-            valid_from=date(2026, 9, 20),
-        ))
+        session.add(
+            WorkItemRow(
+                company_id=company.id,
+                object_id=obj.id,
+                position_no=1,
+                name="Demo",
+                unit="шт",
+                quantity=D("1"),
+                price_gross=D("1220000"),
+                amount_gross=D("1220000"),
+                vat_rate=D("0.22"),
+                source_id=src.id,
+                valid_from=date(2026, 9, 20),
+            )
+        )
         for code, amount in (
-            ("MAT", "500000"), ("LAB", "250000"),
-            ("MACH_OWN", "70000"), ("OVR_SITE", "50000"),
+            ("MAT", "500000"),
+            ("LAB", "250000"),
+            ("MACH_OWN", "70000"),
+            ("OVR_SITE", "50000"),
             ("BANK_GUAR", "27000"),
         ):
-            session.add(CostEntryRow(
-                company_id=company.id, object_id=obj.id, article_code=code,
-                amount=D(amount), amount_type="fixed", vat_mode="net",
-                source_id=src.id, valid_from=date(2026, 9, 20), created_by="test",
-            ))
+            session.add(
+                CostEntryRow(
+                    company_id=company.id,
+                    object_id=obj.id,
+                    article_code=code,
+                    amount=D(amount),
+                    amount_type="fixed",
+                    vat_mode="net",
+                    source_id=src.id,
+                    valid_from=date(2026, 9, 20),
+                    created_by="test",
+                )
+            )
         session.commit()
     return engine
 
 
 def command(*args):
-    return ["whatif", "--company", "Demo Co", "--object", "Demo Object",
-            "--date", "2026-09-20", *args]
+    return [
+        "whatif",
+        "--company",
+        "Demo Co",
+        "--object",
+        "Demo Object",
+        "--date",
+        "2026-09-20",
+        *args,
+    ]
 
 
 def test_CLI_S6_and_read_only(tmp_path, monkeypatch, capsys):
@@ -73,10 +109,17 @@ def test_CLI_S6_and_read_only(tmp_path, monkeypatch, capsys):
             table.name: session.scalar(select(func.count()).select_from(table))
             for table in Base.metadata.tables.values()
         }
-    assert main(command(
-        "--cost-multiplier", "item:MAT=1.10",
-        "--price-reduction", "0.92",
-    )) == 0
+    assert (
+        main(
+            command(
+                "--cost-multiplier",
+                "item:MAT=1.10",
+                "--price-reduction",
+                "0.92",
+            )
+        )
+        == 0
+    )
     output = capsys.readouterr().out
     assert "Прибыль до налога: -27 000" in output
     assert "Выручка без НДС: 920 000" in output
@@ -91,9 +134,7 @@ def test_CLI_S6_and_read_only(tmp_path, monkeypatch, capsys):
 
 def test_CLI_S10_goal_seek(tmp_path, monkeypatch, capsys):
     setup_db(tmp_path, monkeypatch)
-    assert main(command(
-        "--goal-seek", "item:MAT", "--target-profit", "0"
-    )) == 0
+    assert main(command("--goal-seek", "item:MAT", "--target-profit", "0")) == 0
     output = capsys.readouterr().out
     assert "m*: 1.206000" in output
     assert "Проверочная прибыль: 0.00" in output
@@ -148,21 +189,28 @@ def test_CLI_tenant_isolation(tmp_path, monkeypatch, capsys):
         session.add(company)
         session.flush()
         obj = ObjectRow(
-            company_id=company.id, name="Demo Object",
+            company_id=company.id,
+            name="Demo Object",
             valid_from=date(2026, 9, 20),
         )
         session.add(obj)
         session.flush()
-        src = ValueSourceRow(
-            company_id=company.id, source_type="user_input", confidence="exact"
-        )
+        src = ValueSourceRow(company_id=company.id, source_type="user_input", confidence="exact")
         session.add(src)
         session.flush()
-        session.add(CostEntryRow(
-            company_id=company.id, object_id=obj.id, article_code="MAT",
-            amount=D("99999999"), amount_type="fixed", vat_mode="net",
-            source_id=src.id, valid_from=date(2026, 9, 20), created_by="test",
-        ))
+        session.add(
+            CostEntryRow(
+                company_id=company.id,
+                object_id=obj.id,
+                article_code="MAT",
+                amount=D("99999999"),
+                amount_type="fixed",
+                vat_mode="net",
+                source_id=src.id,
+                valid_from=date(2026, 9, 20),
+                created_by="test",
+            )
+        )
         session.commit()
     assert main(command()) == 0
     assert "Прибыль до налога: 103 000" in capsys.readouterr().out

@@ -24,8 +24,8 @@ from construction_os.references import (
 from construction_os.storage.models import (
     AcceptanceActRow,
     Base,
-    CompanyRow,
     CashFlowRow,
+    CompanyRow,
     ContractRow,
     CostArticleRow,
     CostEntryRow,

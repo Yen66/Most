@@ -7,7 +7,11 @@ import pytest
 from construction_os.calc.costs import CostArticle, CostEntry
 from construction_os.calc.scenarios import ScenarioParam
 from construction_os.calc.whatif import (
-    evaluate, goal_seek, parse_multiplier, sensitivity, target_scope,
+    evaluate,
+    goal_seek,
+    parse_multiplier,
+    sensitivity,
+    target_scope,
 )
 from construction_os.references.cost_articles import DEFAULT_COST_ARTICLES
 
@@ -38,23 +42,86 @@ def P(kind, value, scope="all", scope_value=None):
     "case,params,revenue,production,profit,tax,net,margin",
     [
         ("S1", [], "1000000", "870000", "103000", "25750", "77250", "10.30"),
-        ("S2", [P("cost_multiplier", "1.10", "cost_item", "MAT")],
-         "1000000", "920000", "53000", "13250", "39750", "5.30"),
-        ("S3", [P("price_reduction", "0.08")],
-         "920000", "870000", "23000", "5750", "17250", "2.50"),
-        ("S4", [P("price_reduction", "0.08"), P("cost_multiplier", "1.10")],
-         "920000", "957000", "-64000", "0", "-64000", "-6.96"),
-        ("S5", [P("cost_multiplier", "1.10")],
-         "1000000", "957000", "16000", "4000", "12000", "1.60"),
-        ("S6", [P("price_reduction", "0.08"),
-                P("cost_multiplier", "1.10", "cost_item", "MAT")],
-         "920000", "920000", "-27000", "0", "-27000", "-2.93"),
-        ("S7", [P("financial_share_override", "0.027")],
-         "1000000", "870000", "76000", "19000", "57000", "7.60"),
-        ("S8", [P("cost_multiplier", "1.10", "category", "direct")],
-         "1000000", "952000", "21000", "5250", "15750", "2.10"),
-        ("S9", [P("cost_multiplier", "1.05", "cost_item", "MAT")],
-         "1000000", "895000", "78000", "19500", "58500", "7.80"),
+        (
+            "S2",
+            [P("cost_multiplier", "1.10", "cost_item", "MAT")],
+            "1000000",
+            "920000",
+            "53000",
+            "13250",
+            "39750",
+            "5.30",
+        ),
+        (
+            "S3",
+            [P("price_reduction", "0.08")],
+            "920000",
+            "870000",
+            "23000",
+            "5750",
+            "17250",
+            "2.50",
+        ),
+        (
+            "S4",
+            [P("price_reduction", "0.08"), P("cost_multiplier", "1.10")],
+            "920000",
+            "957000",
+            "-64000",
+            "0",
+            "-64000",
+            "-6.96",
+        ),
+        (
+            "S5",
+            [P("cost_multiplier", "1.10")],
+            "1000000",
+            "957000",
+            "16000",
+            "4000",
+            "12000",
+            "1.60",
+        ),
+        (
+            "S6",
+            [P("price_reduction", "0.08"), P("cost_multiplier", "1.10", "cost_item", "MAT")],
+            "920000",
+            "920000",
+            "-27000",
+            "0",
+            "-27000",
+            "-2.93",
+        ),
+        (
+            "S7",
+            [P("financial_share_override", "0.027")],
+            "1000000",
+            "870000",
+            "76000",
+            "19000",
+            "57000",
+            "7.60",
+        ),
+        (
+            "S8",
+            [P("cost_multiplier", "1.10", "category", "direct")],
+            "1000000",
+            "952000",
+            "21000",
+            "5250",
+            "15750",
+            "2.10",
+        ),
+        (
+            "S9",
+            [P("cost_multiplier", "1.05", "cost_item", "MAT")],
+            "1000000",
+            "895000",
+            "78000",
+            "19500",
+            "58500",
+            "7.80",
+        ),
     ],
 )
 def test_F5_scenarios(example, case, params, revenue, production, profit, tax, net, margin):
@@ -62,10 +129,14 @@ def test_F5_scenarios(example, case, params, revenue, production, profit, tax, n
     result = evaluate(entries, articles, D("1000000"), D("0.25"), params, D("0.22"))
     assert result.profit is not None, case
     p = result.profit
-    assert (p.revenue_net, p.costs_production, p.profit_before_tax,
-            p.income_tax, p.net_profit, p.margin_pct) == (
-        D(revenue), D(production), D(profit), D(tax), D(net), D(margin)
-    )
+    assert (
+        p.revenue_net,
+        p.costs_production,
+        p.profit_before_tax,
+        p.income_tax,
+        p.net_profit,
+        p.margin_pct,
+    ) == (D(revenue), D(production), D(profit), D(tax), D(net), D(margin))
 
 
 @pytest.mark.parametrize(
@@ -113,10 +184,14 @@ def test_F6_additive_identity(example):
     entries, articles = example
     rows = sensitivity(entries, articles, D("1000000"), D("0.25"), D("0.10"))
     by_name = {row.parameter: row.delta for row in rows}
-    assert sum(
-        (by_name["item:" + code] for code in ("MAT", "LAB", "MACH_OWN", "OVR_SITE")),
-        D("0"),
-    ) == by_name["all"] == D("-87000")
+    assert (
+        sum(
+            (by_name["item:" + code] for code in ("MAT", "LAB", "MACH_OWN", "OVR_SITE")),
+            D("0"),
+        )
+        == by_name["all"]
+        == D("-87000")
+    )
 
 
 def test_F6_minus_step_all(example):
@@ -135,7 +210,10 @@ def test_F5_goal_seek_equals_breakeven(example):
 def test_F5_financial_share_additive(example):
     entries, articles = example
     result = evaluate(
-        entries, articles, D("1000000"), D("0.25"),
+        entries,
+        articles,
+        D("1000000"),
+        D("0.25"),
         [P("financial_share_override", "0.027")],
     )
     assert result.breakeven.value == D("921891.06")
@@ -144,8 +222,10 @@ def test_F5_financial_share_additive(example):
 
 def test_repeated_multipliers_round_each_step(example):
     entries, articles = example
-    params = [P("cost_multiplier", "1.10", "cost_item", "MAT"),
-              P("cost_multiplier", "1.05", "cost_item", "MAT")]
+    params = [
+        P("cost_multiplier", "1.10", "cost_item", "MAT"),
+        P("cost_multiplier", "1.05", "cost_item", "MAT"),
+    ]
     result = evaluate(entries, articles, D("1000000"), D("0.25"), params)
     assert result.costs.by_article["MAT"] == D("577500.00")
 
@@ -153,7 +233,10 @@ def test_repeated_multipliers_round_each_step(example):
 def test_winter_surcharge_reuses_core(example):
     entries, articles = example
     result = evaluate(
-        entries, articles, D("1000000"), D("0.25"),
+        entries,
+        articles,
+        D("1000000"),
+        D("0.25"),
         [P("winter_surcharge_pct", "0.03")],
     )
     assert result.profit.profit_before_tax == D("76900")
@@ -168,7 +251,10 @@ def test_no_cost_data_is_explicit(example):
 def test_financial_multiplier_never_changes_financial(example):
     entries, articles = example
     result = evaluate(
-        entries, articles, D("1000000"), D("0.25"),
+        entries,
+        articles,
+        D("1000000"),
+        D("0.25"),
         [P("cost_multiplier", "1.10", "cost_item", "BANK_GUAR")],
     )
     assert result.profit.profit_before_tax == D("103000")
@@ -200,8 +286,12 @@ def test_goal_seek_unknown_target(example):
 def test_goal_seek_empty_group(example):
     with pytest.raises(ValueError, match="goal-seek: no data for item:MAT"):
         goal_seek(
-            [CostEntry("LAB", D("1"), vat_mode="net")], example[1],
-            D("1000000"), D("0.25"), "item:MAT", D("0"),
+            [CostEntry("LAB", D("1"), vat_mode="net")],
+            example[1],
+            D("1000000"),
+            D("0.25"),
+            "item:MAT",
+            D("0"),
         )
 
 
@@ -216,12 +306,12 @@ def test_scenario_identity_for_three_cases(example):
         [P("cost_multiplier", "1.10", "category", "direct")],
     ):
         actual = evaluate(entries, articles, D("1000000"), D("0.25"), params)
-        summary = summarize_costs(
-            apply_cost_scenario(entries, articles, params), articles
-        )
+        summary = summarize_costs(apply_cost_scenario(entries, articles, params), articles)
         stored = calculate_profit(
             scenario_revenue(D("1000000"), params),
-            summary.production, summary.financial_fixed,
-            scenario_financial_share(summary.financial_share, params), D("0.25"),
+            summary.production,
+            summary.financial_fixed,
+            scenario_financial_share(summary.financial_share, params),
+            D("0.25"),
         )
         assert actual.profit == stored

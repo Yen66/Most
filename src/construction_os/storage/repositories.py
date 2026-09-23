@@ -9,8 +9,8 @@ from sqlalchemy import select, text
 
 from .models import (
     AcceptanceActRow,
-    CompanyRow,
     CashFlowRow,
+    CompanyRow,
     ContractRow,
     CostArticleRow,
     CostEntryRow,

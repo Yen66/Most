@@ -1,4 +1,5 @@
 """Pure read-only what-if calculations reusing the persisted scenario core."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -106,9 +107,7 @@ def sensitivity(
     targets = ["price", "all"]
     targets.extend("category:" + cat for cat in sorted({a.category for a in articles.values()}))
     targets.extend(
-        "item:" + code
-        for code, value in sorted(base.costs.by_article.items())
-        if value != 0
+        "item:" + code for code, value in sorted(base.costs.by_article.items()) if value != 0
     )
     rows: list[SensitivityRow] = []
     for target in targets:
@@ -136,10 +135,15 @@ def sensitivity(
         if row.delta != 0 and abs(row.delta) != previous_magnitude:
             rank += 1
             previous_magnitude = abs(row.delta)
-        ranked.append(SensitivityRow(
-            row.parameter, row.minus_profit, row.plus_profit, row.delta,
-            rank if row.delta != 0 else None,
-        ))
+        ranked.append(
+            SensitivityRow(
+                row.parameter,
+                row.minus_profit,
+                row.plus_profit,
+                row.delta,
+                rank if row.delta != 0 else None,
+            )
+        )
     return ranked
 
 
@@ -169,29 +173,33 @@ def goal_seek(
         if denominator <= 0:
             raise ValueError(f"goal-seek: no data for {target}")
         exact = (p.costs_production + p.financial_fixed + target_profit) / denominator
-        goal_param = ScenarioParam("price_reduction", Decimal("1") - exact.quantize(
-            SIX_PLACES, rounding=ROUND_HALF_UP
-        ))
+        goal_param = ScenarioParam(
+            "price_reduction", Decimal("1") - exact.quantize(SIX_PLACES, rounding=ROUND_HALF_UP)
+        )
     else:
         group = sum(
             (
-                amount for code, amount in current.costs.by_article.items()
+                amount
+                for code, amount in current.costs.by_article.items()
                 if articles[code].category != "financial"
-                and (scope == "all"
-                     or (scope == "category" and articles[code].category == value)
-                     or (scope == "cost_item" and code == value))
+                and (
+                    scope == "all"
+                    or (scope == "category" and articles[code].category == value)
+                    or (scope == "cost_item" and code == value)
+                )
             ),
             Decimal("0"),
         )
         if group == 0:
             raise ValueError(f"goal-seek: no data for {target}")
         exact = (
-            p.revenue_net - p.financial_costs - target_profit
-            - (p.costs_production - group)
+            p.revenue_net - p.financial_costs - target_profit - (p.costs_production - group)
         ) / group
         goal_param = ScenarioParam(
-            "cost_multiplier", exact.quantize(SIX_PLACES, rounding=ROUND_HALF_UP),
-            scope, value,
+            "cost_multiplier",
+            exact.quantize(SIX_PLACES, rounding=ROUND_HALF_UP),
+            scope,
+            value,
         )
     multiplier = exact.quantize(SIX_PLACES, rounding=ROUND_HALF_UP)
     verified = evaluate(entries, articles, revenue_net, tax_rate, [*params, goal_param], vat_rate)

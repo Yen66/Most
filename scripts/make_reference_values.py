@@ -233,7 +233,6 @@ def render_new_sections():
     return "\n".join(lines) + "\n" + render_task13_sections()
 
 
-
 def render_task13_sections():
     """CF1-CF5 and S1-S13/F6: derive every result from production modules."""
     from construction_os.calc.cashflow import Flow, daily_balances, financing_cost, gap_report
@@ -250,23 +249,44 @@ def render_task13_sections():
     ]
     cash_cases = (
         ("CF1", base_flows, T("2026-09-15"), T("2026-10-31")),
-        ("CF2", [Flow(T("2026-09-01"), "inflow", D("300000"), "advance"),
-                 *base_flows], T("2026-09-01"), T("2026-10-31")),
-        ("CF3", [
-            Flow(T("2026-09-20"), "outflow", D("960000"), "SUB"),
-            Flow(T("2026-10-08"), "inflow", D("950000"), "act_payment"),
-        ], T("2026-09-20"), T("2026-10-31")),
-        ("CF4", [
-            Flow(T("2026-10-01"), "outflow", D("800000"), "MAT"),
-            Flow(T("2026-10-20"), "inflow", D("1000000"), "act_payment", "fact"),
-        ], T("2026-10-01"), T("2026-10-31")),
-        ("CF5", [
-            Flow(T("2026-09-01"), "inflow", D("500000"), "advance"),
-            Flow(T("2026-09-20"), "outflow", D("400000"), "MAT"),
-        ], T("2026-09-01"), T("2026-09-30")),
+        (
+            "CF2",
+            [Flow(T("2026-09-01"), "inflow", D("300000"), "advance"), *base_flows],
+            T("2026-09-01"),
+            T("2026-10-31"),
+        ),
+        (
+            "CF3",
+            [
+                Flow(T("2026-09-20"), "outflow", D("960000"), "SUB"),
+                Flow(T("2026-10-08"), "inflow", D("950000"), "act_payment"),
+            ],
+            T("2026-09-20"),
+            T("2026-10-31"),
+        ),
+        (
+            "CF4",
+            [
+                Flow(T("2026-10-01"), "outflow", D("800000"), "MAT"),
+                Flow(T("2026-10-20"), "inflow", D("1000000"), "act_payment", "fact"),
+            ],
+            T("2026-10-01"),
+            T("2026-10-31"),
+        ),
+        (
+            "CF5",
+            [
+                Flow(T("2026-09-01"), "inflow", D("500000"), "advance"),
+                Flow(T("2026-09-20"), "outflow", D("400000"), "MAT"),
+            ],
+            T("2026-09-01"),
+            T("2026-09-30"),
+        ),
     )
     lines = [
-        "", "## Cash-flow", "",
+        "",
+        "## Cash-flow",
+        "",
         "| Кейс | Дней в минусе | Максимум | Первая дата максимума | "
         "Первый минус | Выход | Финансирование | Баланс |",
         "|---|---:|---:|---|---|---|---:|---:|",
@@ -282,10 +302,10 @@ def render_task13_sections():
         )
     lines += [
         "",
-        "CF3: удержание " + m(D("1000000") - D("950000"))
-        + " — дата возврата неизвестна.",
+        "CF3: удержание " + m(D("1000000") - D("950000")) + " — дата возврата неизвестна.",
         "",
-        "## What-if", "",
+        "## What-if",
+        "",
         "| Кейс | Выручка | Производственные | Прибыль | Налог | Чистая | Маржа |",
         "|---|---:|---:|---:|---:|---:|---:|",
     ]
@@ -296,8 +316,10 @@ def render_task13_sections():
     entries = [
         CostEntry(code, D(amount), vat_mode="net")
         for code, amount in (
-            ("MAT", "500000"), ("LAB", "250000"),
-            ("MACH_OWN", "70000"), ("OVR_SITE", "50000"),
+            ("MAT", "500000"),
+            ("LAB", "250000"),
+            ("MACH_OWN", "70000"),
+            ("OVR_SITE", "50000"),
             ("BANK_GUAR", "27000"),
         )
     ]
@@ -306,11 +328,12 @@ def render_task13_sections():
         ("S1", []),
         ("S2", [P("cost_multiplier", D("1.10"), "cost_item", "MAT")]),
         ("S3", [P("price_reduction", D("0.08"))]),
-        ("S4", [P("price_reduction", D("0.08")),
-                P("cost_multiplier", D("1.10"))]),
+        ("S4", [P("price_reduction", D("0.08")), P("cost_multiplier", D("1.10"))]),
         ("S5", [P("cost_multiplier", D("1.10"))]),
-        ("S6", [P("price_reduction", D("0.08")),
-                P("cost_multiplier", D("1.10"), "cost_item", "MAT")]),
+        (
+            "S6",
+            [P("price_reduction", D("0.08")), P("cost_multiplier", D("1.10"), "cost_item", "MAT")],
+        ),
         ("S7", [P("financial_share_override", D("0.027"))]),
         ("S8", [P("cost_multiplier", D("1.10"), "category", "direct")]),
         ("S9", [P("cost_multiplier", D("1.05"), "cost_item", "MAT")]),
@@ -325,7 +348,9 @@ def render_task13_sections():
             f"{m(profit.net_profit)} | {p(profit.margin_pct)} |"
         )
     lines += [
-        "", "## Goal-seek", "",
+        "",
+        "## Goal-seek",
+        "",
         "| Кейс | Цель | Прибыль-цель | m* | Проверочная прибыль | Остаток |",
         "|---|---|---:|---:|---:|---:|",
     ]
@@ -341,7 +366,9 @@ def render_task13_sections():
             f"{m(result.checked_profit)} | {m(result.residual)} |"
         )
     lines += [
-        "", "## Sensitivity", "",
+        "",
+        "## Sensitivity",
+        "",
         "| Параметр | Прибыль −step | Прибыль +step | Δ | Ранг |",
         "|---|---:|---:|---:|---:|",
     ]

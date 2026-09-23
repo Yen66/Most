@@ -1,4 +1,5 @@
 """Cash-flow storage operations; only this module writes cash_flows."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -24,9 +25,9 @@ from construction_os.storage.models import (
 )
 from construction_os.storage.repositories import CashFlowRepository
 
-INFLOW_CATEGORIES = frozenset({
-    "advance", "act_payment", "retention_return", "penalty_in", "other_inflow"
-})
+INFLOW_CATEGORIES = frozenset(
+    {"advance", "act_payment", "retention_return", "penalty_in", "other_inflow"}
+)
 
 
 class CashFlowError(ValueError):
@@ -45,9 +46,11 @@ def validate_category(session, direction: str, category: str) -> None:
         if category not in INFLOW_CATEGORIES:
             raise CashFlowError(f"unknown inflow category: {category}")
     elif direction == "outflow":
-        active = session.scalar(select(CostArticleRow).where(
-            CostArticleRow.code == category, CostArticleRow.is_active.is_(True)
-        ))
+        active = session.scalar(
+            select(CostArticleRow).where(
+                CostArticleRow.code == category, CostArticleRow.is_active.is_(True)
+            )
+        )
         if active is None and category != "other_outflow":
             raise CashFlowError(f"unknown outflow category: {category}")
     else:
@@ -79,9 +82,13 @@ def contract_ids(session, company_id: UUID, number: str | None) -> list[UUID] | 
     if number is None:
         return None
     find_contract(session, company_id, number)
-    return list(session.scalars(select(ContractRow.id).where(
-        ContractRow.company_id == company_id, ContractRow.number == number
-    )))
+    return list(
+        session.scalars(
+            select(ContractRow.id).where(
+                ContractRow.company_id == company_id, ContractRow.number == number
+            )
+        )
+    )
 
 
 def missing_information(session, company_id, contract_filter=None) -> list[str]:
@@ -104,23 +111,32 @@ def missing_information(session, company_id, contract_filter=None) -> list[str]:
         objects = select(ObjectRow.id).where(
             ObjectRow.company_id == company_id, ObjectRow.contract_id.in_(contract_filter)
         )
-        cost_query = cost_query.where(or_(
-            CostEntryRow.contract_id.in_(contract_filter),
-            CostEntryRow.object_id.in_(objects),
-        ))
+        cost_query = cost_query.where(
+            or_(
+                CostEntryRow.contract_id.in_(contract_filter),
+                CostEntryRow.object_id.in_(objects),
+            )
+        )
     cost_rows = list(session.scalars(cost_query))
     if cost_rows:
-        total = money(sum(
-            (r.amount for r in cost_rows if r.amount is not None), Decimal("0")
-        ))
+        total = money(sum((r.amount for r in cost_rows if r.amount is not None), Decimal("0")))
         warnings.append(f"затраты {total} без дат — введите оттоки вручную")
     return warnings
 
 
 def add_manual_flow(
-    session, company_id, flow_date: date, direction: str, amount: Decimal,
-    category: str, *, contract_id=None, object_id=None, note=None,
-    force_plan=False, actor="cli",
+    session,
+    company_id,
+    flow_date: date,
+    direction: str,
+    amount: Decimal,
+    category: str,
+    *,
+    contract_id=None,
+    object_id=None,
+    note=None,
+    force_plan=False,
+    actor="cli",
 ) -> CashFlowRow:
     validate_category(session, direction, category)
     if amount <= 0:
@@ -170,19 +186,22 @@ def build_cash_flows(
     created = existed = 0
     warnings = missing_information(session, company.id, ids)
     for obligation, act in session.execute(query.order_by(PaymentObligationRow.due_on)):
-        old_flow = session.scalar(select(CashFlowRow).where(
-            CashFlowRow.company_id == company.id,
-            CashFlowRow.source_kind == "payment_obligation",
-            CashFlowRow.source_id == obligation.id,
-            CashFlowRow.valid_to.is_(None),
-        ))
+        old_flow = session.scalar(
+            select(CashFlowRow).where(
+                CashFlowRow.company_id == company.id,
+                CashFlowRow.source_kind == "payment_obligation",
+                CashFlowRow.source_id == obligation.id,
+                CashFlowRow.valid_to.is_(None),
+            )
+        )
         if old_flow is not None:
             existed += 1
             continue
         historical = session.get(ContractRow, act.contract_id)
         contract = (
             find_contract(session, company.id, historical.number)
-            if historical.number is not None else historical
+            if historical.number is not None
+            else historical
         )
         retention = contract.warranty_retention_pct or Decimal("0")
         amount = money(obligation.amount * (Decimal("1") - retention))
@@ -191,9 +210,7 @@ def build_cash_flows(
             continue
         if retention:
             withheld = money(obligation.amount - amount)
-            warnings.append(
-                f"гарантийное удержание {withheld} — дата возврата неизвестна"
-            )
+            warnings.append(f"гарантийное удержание {withheld} — дата возврата неизвестна")
         values = {
             "contract_id": contract.id,
             "object_id": act.object_id,
@@ -206,21 +223,31 @@ def build_cash_flows(
             "source_id": obligation.id,
             "note": act.act_number,
         }
-        older_ids = list(session.scalars(select(PaymentObligationRow.id).where(
-            PaymentObligationRow.company_id == company.id,
-            PaymentObligationRow.act_id == obligation.act_id,
-            PaymentObligationRow.id != obligation.id,
-        )))
-        superseded = session.scalar(select(CashFlowRow).where(
-            CashFlowRow.company_id == company.id,
-            CashFlowRow.source_kind == "payment_obligation",
-            CashFlowRow.source_id.in_(older_ids) if older_ids else CashFlowRow.id.is_(None),
-            CashFlowRow.valid_to.is_(None),
-        ))
+        older_ids = list(
+            session.scalars(
+                select(PaymentObligationRow.id).where(
+                    PaymentObligationRow.company_id == company.id,
+                    PaymentObligationRow.act_id == obligation.act_id,
+                    PaymentObligationRow.id != obligation.id,
+                )
+            )
+        )
+        superseded = session.scalar(
+            select(CashFlowRow).where(
+                CashFlowRow.company_id == company.id,
+                CashFlowRow.source_kind == "payment_obligation",
+                CashFlowRow.source_id.in_(older_ids) if older_ids else CashFlowRow.id.is_(None),
+                CashFlowRow.valid_to.is_(None),
+            )
+        )
         if superseded is not None:
             row = repo.supersede(
-                company.id, superseded.id, values, "новая версия обязательства",
-                actor, values["flow_date"],
+                company.id,
+                superseded.id,
+                values,
+                "новая версия обязательства",
+                actor,
+                values["flow_date"],
             )
         else:
             row = repo.add(company.id, **values, valid_from=values["flow_date"])

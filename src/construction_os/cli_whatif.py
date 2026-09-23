@@ -1,4 +1,5 @@
 """Read-only CLI for point scenarios, sensitivity and algebraic goal seeking."""
+
 from __future__ import annotations
 
 from datetime import date
@@ -82,30 +83,38 @@ def run_whatif(args, session) -> int:
     try:
         company, obj = find_active_object(session, args.company, args.object)
         report = load_economics_report(session, args.company, args.object, args.date)
-        article_rows = list(session.scalars(
-            select(CostArticleRow).where(CostArticleRow.is_active.is_(True))
-        ))
+        article_rows = list(
+            session.scalars(select(CostArticleRow).where(CostArticleRow.is_active.is_(True)))
+        )
         articles = {
-            r.code: CostArticle(r.code, r.category, r.name, r.sort_order)
-            for r in article_rows
+            r.code: CostArticle(r.code, r.category, r.name, r.sort_order) for r in article_rows
         }
         lineage = object_lineage_ids(session, obj)
-        cost_rows = list(session.scalars(select(CostEntryRow).where(
-            CostEntryRow.company_id == company.id,
-            CostEntryRow.object_id.in_(lineage),
-            CostEntryRow.valid_to.is_(None),
-        )))
+        cost_rows = list(
+            session.scalars(
+                select(CostEntryRow).where(
+                    CostEntryRow.company_id == company.id,
+                    CostEntryRow.object_id.in_(lineage),
+                    CostEntryRow.valid_to.is_(None),
+                )
+            )
+        )
         entries = [
-            CostEntry(r.article_code, r.amount, r.amount_type, r.rate_value,
-                      r.vat_mode, r.vat_rate, r.work_item_id)
+            CostEntry(
+                r.article_code,
+                r.amount,
+                r.amount_type,
+                r.rate_value,
+                r.vat_mode,
+                r.vat_rate,
+                r.work_item_id,
+            )
             for r in cost_rows
         ]
         params = _parameters(args, articles)
         tax = get_rate(RateType.PROFIT_TAX, args.date).value
         base = evaluate(entries, articles, report.revenue_net, tax, vat_rate=report.vat_rate)
-        after = evaluate(
-            entries, articles, report.revenue_net, tax, params, report.vat_rate
-        )
+        after = evaluate(entries, articles, report.revenue_net, tax, params, report.vat_rate)
         print(f"{company.name} / {obj.name} / {args.date}")
         print(f"Полнота: {'полный' if base.costs and base.costs.complete else 'неполный'}")
         if base.costs and base.costs.missing_articles:
@@ -125,9 +134,13 @@ def run_whatif(args, session) -> int:
         print("## Дельта")
         if base.profit and after.profit:
             for label, attr in (
-                ("Выручка", "revenue_net"), ("Производственные", "costs_production"),
-                ("Финансовые", "financial_costs"), ("Прибыль", "profit_before_tax"),
-                ("Налог", "income_tax"), ("Чистая", "net_profit"), ("Маржа %", "margin_pct"),
+                ("Выручка", "revenue_net"),
+                ("Производственные", "costs_production"),
+                ("Финансовые", "financial_costs"),
+                ("Прибыль", "profit_before_tax"),
+                ("Налог", "income_tax"),
+                ("Чистая", "net_profit"),
+                ("Маржа %", "margin_pct"),
             ):
                 a = getattr(base.profit, attr)
                 b = getattr(after.profit, attr)
@@ -141,7 +154,9 @@ def run_whatif(args, session) -> int:
             print("## Доступные параметры")
             print(f"Выручка с НДС: {format_money_ru(report.revenue_gross)}")
             print(f"Выручка без НДС: {format_money_ru(report.revenue_net)}")
-            for code, article in sorted(articles.items(), key=lambda x: (x[1].sort_order or 0, x[0])):
+            for code, article in sorted(
+                articles.items(), key=lambda x: (x[1].sort_order or 0, x[0])
+            ):
                 value = base.costs.by_article.get(code) if base.costs else None
                 print(
                     f"{code} | {article.category} | "
@@ -159,7 +174,9 @@ def run_whatif(args, session) -> int:
                 raise ValueError(f"invalid sensitivity step: {args.step}")
             print(f"## Чувствительность ±{step}")
             print("Параметр | прибыль −step | прибыль +step | Δ | ранг")
-            for row in sensitivity(entries, articles, report.revenue_net, tax, step, report.vat_rate):
+            for row in sensitivity(
+                entries, articles, report.revenue_net, tax, step, report.vat_rate
+            ):
                 note = " (financial: множитель не действует)" if row.rank is None else ""
                 print(
                     f"{row.parameter} | {row.minus_profit:.2f} | {row.plus_profit:.2f} "
@@ -174,8 +191,14 @@ def run_whatif(args, session) -> int:
                 except ValueError:
                     raise ValueError(f"invalid goal-seek target: {args.goal_seek}") from None
             result = goal_seek(
-                entries, articles, report.revenue_net, tax,
-                args.goal_seek, parse_multiplier(args.target_profit), params, report.vat_rate,
+                entries,
+                articles,
+                report.revenue_net,
+                tax,
+                args.goal_seek,
+                parse_multiplier(args.target_profit),
+                params,
+                report.vat_rate,
             )
             print("## Обратный счёт")
             print(f"m*: {result.multiplier:.6f}")
