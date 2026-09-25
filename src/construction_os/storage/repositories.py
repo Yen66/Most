@@ -15,6 +15,7 @@ from .models import (
     CostArticleRow,
     CostEntryRow,
     DocumentRow,
+    FactEntryRow,
     ObjectRow,
     PaymentObligationRow,
     ReferenceRateRow,
@@ -22,6 +23,7 @@ from .models import (
     ScenarioRow,
     ScheduleNoteRow,
     ScheduleTaskRow,
+    TimeMarkRow,
     ValueConfirmationRow,
     ValueRefRow,
     ValueSourceRow,
@@ -307,6 +309,16 @@ class CashFlowRepository(BaseRepository):
     model = CashFlowRow
 
 
+class FactEntryRepository(BaseRepository):
+    model = FactEntryRow
+    business_key = ("work_item_id", "fact_date")
+
+
+class TimeMarkRepository(BaseRepository):
+    model = TimeMarkRow
+    business_key = ("trip_code", "mark_type")
+
+
 TENANT_REPOSITORIES = (
     DocumentRepository,
     ValueSourceRepository,
@@ -315,6 +327,8 @@ TENANT_REPOSITORIES = (
     AcceptanceActRepository,
     PaymentObligationRepository,
     CashFlowRepository,
+    FactEntryRepository,
+    TimeMarkRepository,
     ObjectRepository,
     WorkItemRepository,
     ScheduleTaskRepository,

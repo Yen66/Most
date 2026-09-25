@@ -22,6 +22,7 @@ TERM_FIELDS = (
     "award_reduction_factor",
     "price_is_final",
     "penalty_cap_pct",
+    "object_id",
 )
 
 
@@ -92,6 +93,7 @@ def set_contract(
     award_reduction_factor: Decimal | None = None,
     price_is_final: bool | None = None,
     penalty_cap_pct: Decimal | None = None,
+    object_name: str | None = None,
     actor: str = "cli",
     reason: str | None = None,
     effective_on: date | None = None,
@@ -113,6 +115,17 @@ def set_contract(
     if company is None:
         raise LookupError(f"нет данных: компания {company_name}")
     effective_on = effective_on or date.today()
+    if object_name is not None:
+        obj = session.scalar(
+            select(ObjectRow).where(
+                ObjectRow.company_id == company.id,
+                ObjectRow.name == object_name,
+                ObjectRow.valid_to.is_(None),
+            )
+        )
+        if obj is None:
+            raise LookupError(f"object not found for company: {object_name}")
+        terms["object_id"] = obj.id
     changes = {field: value for field, value in terms.items() if value is not None}
     current = session.scalar(
         select(ContractRow).where(

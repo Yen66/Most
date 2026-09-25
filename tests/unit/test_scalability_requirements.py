@@ -4,7 +4,7 @@ import ast
 import os
 import subprocess
 import sys
-from datetime import date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -30,12 +30,14 @@ from construction_os.storage.models import (
     CostArticleRow,
     CostEntryRow,
     DocumentRow,
+    FactEntryRow,
     ObjectRow,
     PaymentObligationRow,
     ScenarioParamRow,
     ScenarioRow,
     ScheduleNoteRow,
     ScheduleTaskRow,
+    TimeMarkRow,
     ValueConfirmationRow,
     ValueRefRow,
     ValueSourceRow,
@@ -172,7 +174,23 @@ def _seed_tenant_rows(session, company_name: str):
         created_by="test",
         valid_from=date(2026, 1, 1),
     )
-    session.add_all([cost, scenario])
+    fact = FactEntryRow(
+        company_id=company.id,
+        object_id=obj.id,
+        work_item_id=work.id,
+        fact_date=date(2026, 1, 2),
+        quantity=Decimal("1"),
+        valid_from=date(2026, 1, 2),
+    )
+    mark = TimeMarkRow(
+        company_id=company.id,
+        object_id=obj.id,
+        trip_code=f"TRIP-{company_name}",
+        mark_type="arrived",
+        marked_at=datetime(2026, 1, 2, 8, tzinfo=UTC),
+        valid_from=date(2026, 1, 2),
+    )
+    session.add_all([cost, scenario, fact, mark])
     session.flush()
     act = AcceptanceActRow(
         company_id=company.id,
@@ -240,6 +258,8 @@ def _seed_tenant_rows(session, company_name: str):
             act,
             obligation,
             flow,
+            fact,
+            mark,
         )
     }
     return company, rows
@@ -323,6 +343,8 @@ def test_M03_values_are_superseded_not_updated(sqlite_session):
         "scenarios",
         "acceptance_acts",
         "payment_obligations",
+        "fact_entries",
+        "time_marks",
     ):
         assert {"valid_from", "valid_to", "superseded_by", "replace_reason"} <= set(
             Base.metadata.tables[table_name].c.keys()

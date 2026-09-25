@@ -114,6 +114,7 @@ class ContractRow(Base):
     company_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("companies.id"), nullable=False, index=True
     )
+    object_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("objects.id"))
     contract_type: Mapped[str] = mapped_column(Text, nullable=False)
     number: Mapped[str | None] = mapped_column(Text)
     signed_on: Mapped[date | None] = mapped_column(Date)
@@ -551,4 +552,73 @@ class CashFlowRow(Base):
     valid_from: Mapped[date] = mapped_column(Date, nullable=False)
     valid_to: Mapped[date | None] = mapped_column(Date)
     superseded_by: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("cash_flows.id"))
+    replace_reason: Mapped[str | None] = mapped_column(Text)
+
+class FactEntryRow(Base):
+    __tablename__ = "fact_entries"
+    __table_args__ = (
+        CheckConstraint("quantity > 0", name="ck_fact_quantity_positive"),
+        Index(
+            "uq_fact_entry_current",
+            "company_id",
+            "work_item_id",
+            "fact_date",
+            unique=True,
+            postgresql_where=column("valid_to").is_(None),
+            sqlite_where=column("valid_to").is_(None),
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
+    object_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("objects.id"), nullable=False, index=True
+    )
+    work_item_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("work_items.id"), nullable=False, index=True
+    )
+    fact_date: Mapped[date] = mapped_column(Date, nullable=False)
+    quantity: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
+    recorded_by: Mapped[str | None] = mapped_column(Text)
+    note: Mapped[str | None] = mapped_column(Text)
+    valid_from: Mapped[date] = mapped_column(Date, nullable=False, default=date.today)
+    valid_to: Mapped[date | None] = mapped_column(Date)
+    superseded_by: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("fact_entries.id"))
+    replace_reason: Mapped[str | None] = mapped_column(Text)
+
+
+class TimeMarkRow(Base):
+    __tablename__ = "time_marks"
+    __table_args__ = (
+        CheckConstraint(
+            "mark_type IN ('arrived','loading_start','loaded','arrived_site','unloaded','departed')",
+            name="ck_marks_type_valid",
+        ),
+        Index(
+            "uq_time_mark_current",
+            "company_id",
+            "trip_code",
+            "mark_type",
+            unique=True,
+            postgresql_where=column("valid_to").is_(None),
+            sqlite_where=column("valid_to").is_(None),
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    company_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("companies.id"), nullable=False, index=True
+    )
+    object_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("objects.id"), nullable=False, index=True
+    )
+    trip_code: Mapped[str] = mapped_column(Text, nullable=False)
+    mark_type: Mapped[str] = mapped_column(Text, nullable=False)
+    marked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    vehicle: Mapped[str | None] = mapped_column(Text)
+    idle_reason: Mapped[str | None] = mapped_column(Text)
+    note: Mapped[str | None] = mapped_column(Text)
+    valid_from: Mapped[date] = mapped_column(Date, nullable=False, default=date.today)
+    valid_to: Mapped[date | None] = mapped_column(Date)
+    superseded_by: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("time_marks.id"))
     replace_reason: Mapped[str | None] = mapped_column(Text)

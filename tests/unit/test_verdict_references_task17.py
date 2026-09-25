@@ -50,7 +50,7 @@ def test_reference_file_exact_generator_output():
 
 
 def test_schema_counters_unchanged():
-    assert len(Base.metadata.tables) == 19
-    assert len(TENANT_REPOSITORIES) == 15
-    assert len(ALL_REPOSITORIES) == 19
+    assert len(Base.metadata.tables) == 21
+    assert len(TENANT_REPOSITORIES) == 17
+    assert len(ALL_REPOSITORIES) == 21
     assert len(EXCLUDED_TABLES) == 4
