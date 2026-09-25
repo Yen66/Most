@@ -43,6 +43,10 @@ jobs:
           DATABASE_URL=sqlite:///cashflow_demo.db construction-os cash-flow build --company "Demo Co" --contract-number "ДЕМО-АКТ-2026"
           DATABASE_URL=sqlite:///cashflow_demo.db construction-os cash-flow report --company "Demo Co" --as-of 2026-10-31 --rate 0.14
           DATABASE_URL=sqlite:///construction_os.db construction-os whatif --company "Demo Co" --object "Demo Object" --date 2026-09-20 --cost-multiplier item:MAT=1.10 --price-reduction 0.92
+          DATABASE_URL=sqlite:///construction_os.db construction-os intake --company "Fixture Co" tests/fixtures/generated/vor_object_a.xlsx tests/fixtures/generated/vor_object_b.xlsx tests/fixtures/generated/vor_object_c.xlsx tests/fixtures/generated/schedule_object_a.xlsx
+          DATABASE_URL=sqlite:///construction_os.db construction-os verdict --company "Fixture Co" --object vor_object_a --date 2026-09-20
+          DATABASE_URL=sqlite:///construction_os.db construction-os contract set --company "Demo Co" --number "ДЕМО-АКТ-2026" --award-reduction-factor 0.87
+          DATABASE_URL=sqlite:///construction_os.db construction-os verdict --company "Demo Co" --object "Demo Object" --date 2026-09-20
           pytest --collect-only -q | tail -1
           find src tests scripts -name '*.py' | xargs wc -l | tail -1
           python - <<'PY'
